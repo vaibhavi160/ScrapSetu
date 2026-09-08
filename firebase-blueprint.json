@@ -1,0 +1,324 @@
+{
+  "entities": {
+    "users": {
+      "title": "UserProfile",
+      "description": "User profile including collectors, recyclers, and household sellers",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Firebase Auth User UID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Mobile telephone number",
+          "maxLength": 20
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Ecosystem role: collector, recycler, or seller",
+          "enum": ["collector", "recycler", "seller"]
+        },
+        "city": {
+          "type": "string",
+          "description": "City of operation",
+          "maxLength": 60
+        },
+        "pincode": {
+          "type": "string",
+          "description": "Postal pincode",
+          "maxLength": 10
+        },
+        "upiId": {
+          "type": "string",
+          "description": "UPI ID for digital payments",
+          "maxLength": 60
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Scrap store or recycling facility name",
+          "maxLength": 120
+        },
+        "totalEarnings": {
+          "type": "number",
+          "description": "Cumulative earnings in INR"
+        },
+        "totalWasteHandledKg": {
+          "type": "number",
+          "description": "Cumulative kilograms of waste diverted and processed"
+        },
+        "transactionsCount": {
+          "type": "number",
+          "description": "Total count of transactions"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account registration",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update",
+          "maxLength": 40
+        }
+      },
+      "required": ["id", "name", "role"]
+    },
+    "recyclers": {
+      "title": "RecyclerFacility",
+      "description": "Verified scrap processing and recycling facilities",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique recycler ID",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Facility name",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "description": "Primary specialization (e.g., metals, e-waste, plastics)",
+          "maxLength": 50
+        },
+        "ratePerKg": {
+          "type": "number",
+          "description": "Current buying rate per kg"
+        },
+        "distanceKm": {
+          "type": "number",
+          "description": "Distance from hub in km"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Verification status"
+        },
+        "eprCertified": {
+          "type": "boolean",
+          "description": "Extended Producer Responsibility compliance certification"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Collector trust rating from 1 to 5"
+        },
+        "address": {
+          "type": "string",
+          "description": "Facility street address",
+          "maxLength": 200
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone",
+          "maxLength": 20
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Facility manager name",
+          "maxLength": 100
+        }
+      },
+      "required": ["id", "name", "category", "ratePerKg", "isVerified"]
+    },
+    "categories": {
+      "title": "WasteCategory",
+      "description": "Standardized scrap material category with official market rates and safety rules",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Category identifier (e.g. copper, ewaste, cardboard)",
+          "maxLength": 40
+        },
+        "name": {
+          "type": "string",
+          "description": "English name",
+          "maxLength": 60
+        },
+        "hindiName": {
+          "type": "string",
+          "description": "Hindi / local dialect name",
+          "maxLength": 60
+        },
+        "ratePerKg": {
+          "type": "number",
+          "description": "Market rate per kilogram in INR"
+        },
+        "baseRatePerKg": {
+          "type": "number",
+          "description": "Baseline reference rate in INR"
+        },
+        "recyclable": {
+          "type": "boolean",
+          "description": "Recyclability status"
+        },
+        "safetyHazard": {
+          "type": "string",
+          "description": "Safety guidance and hazard class",
+          "maxLength": 100
+        },
+        "unit": {
+          "type": "string",
+          "description": "Measurement unit (kg, piece, etc.)",
+          "maxLength": 20
+        },
+        "carbonFactorKg": {
+          "type": "number",
+          "description": "CO2 emissions avoided per kg diverted"
+        }
+      },
+      "required": ["id", "name", "ratePerKg", "recyclable"]
+    },
+    "transactions": {
+      "title": "TransactionRecord",
+      "description": "Completed scrap sale and digital receipt",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Transaction unique identifier",
+          "maxLength": 64
+        },
+        "collectorId": {
+          "type": "string",
+          "description": "UID or ID of the collector",
+          "maxLength": 128
+        },
+        "collectorName": {
+          "type": "string",
+          "description": "Collector full name",
+          "maxLength": 100
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Scrap material category ID",
+          "maxLength": 40
+        },
+        "categoryName": {
+          "type": "string",
+          "description": "Category display name",
+          "maxLength": 60
+        },
+        "weightKg": {
+          "type": "number",
+          "description": "Verified weight in kg"
+        },
+        "ratePerKg": {
+          "type": "number",
+          "description": "Locked rate per kg at transaction time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total payment amount in INR"
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Payment settlement status",
+          "enum": ["pending", "verified", "failed"]
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Settlement method: UPI, Cash, or Bank Transfer",
+          "maxLength": 30
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 40
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether receipt is cryptographically verified"
+        }
+      },
+      "required": ["id", "collectorId", "categoryId", "weightKg", "totalAmount", "paymentStatus"]
+    },
+    "pickups": {
+      "title": "DoorstepPickup",
+      "description": "Doorstep scrap pickup requests and appointments",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique pickup request ID",
+          "maxLength": 64
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Household or commercial customer name",
+          "maxLength": 100
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Contact phone number",
+          "maxLength": 20
+        },
+        "address": {
+          "type": "string",
+          "description": "Pickup street address",
+          "maxLength": 200
+        },
+        "scheduledTime": {
+          "type": "string",
+          "description": "Scheduled time window",
+          "maxLength": 60
+        },
+        "status": {
+          "type": "string",
+          "description": "Pickup lifecycle state",
+          "enum": ["pending", "scheduled", "in_progress", "completed", "cancelled"]
+        },
+        "estimatedWeightKg": {
+          "type": "number",
+          "description": "Estimated weight in kilograms"
+        },
+        "category": {
+          "type": "string",
+          "description": "Expected waste category",
+          "maxLength": 50
+        },
+        "assignedCollectorId": {
+          "type": "string",
+          "description": "Assigned collector ID",
+          "maxLength": 128
+        }
+      },
+      "required": ["id", "customerName", "customerPhone", "address", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile documents keyed by user UID"
+    },
+    "/recyclers/{recyclerId}": {
+      "schema": "recyclers",
+      "description": "Authorized recycler hub profiles"
+    },
+    "/categories/{categoryId}": {
+      "schema": "categories",
+      "description": "Official scrap categories and rate indices"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "transactions",
+      "description": "Audit-logged scrap transaction records"
+    },
+    "/pickups/{pickupId}": {
+      "schema": "pickups",
+      "description": "Doorstep pickup appointments"
+    }
+  }
+}

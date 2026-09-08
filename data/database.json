@@ -1,0 +1,123 @@
+{
+  "users": [
+    {
+      "id": "usr_collector_01",
+      "name": "Ramesh Kabadiwala",
+      "phone": "9820011982",
+      "email": "ramesh.kabadi@scrapsetu.in",
+      "passwordOrPin": "1234",
+      "role": "collector",
+      "city": "Mumbai",
+      "pincode": "400017",
+      "upiId": "ramesh.scrap@upi",
+      "businessName": "Ramesh Scrap & E-Waste Collection",
+      "totalEarnings": 34500,
+      "totalWasteHandledKg": 890,
+      "transactionsCount": 42,
+      "createdAt": "2026-01-15T08:00:00.000Z",
+      "lastLoginAt": "2026-09-08T17:04:15.609Z"
+    },
+    {
+      "id": "usr_seller_01",
+      "name": "Sunita Sharma",
+      "phone": "9876543210",
+      "email": "sunita.sharma@gmail.com",
+      "passwordOrPin": "1234",
+      "role": "seller",
+      "city": "Navi Mumbai",
+      "pincode": "400703",
+      "upiId": "sunita@oksbi",
+      "businessName": "Residential Seller (Green Heights Coop)",
+      "totalEarnings": 8400,
+      "totalWasteHandledKg": 140,
+      "transactionsCount": 7,
+      "createdAt": "2026-02-10T11:30:00.000Z",
+      "lastLoginAt": "2026-09-08T17:04:04.076Z"
+    },
+    {
+      "id": "usr_recycler_01",
+      "name": "EcoRecycle Solutions Pvt Ltd",
+      "phone": "9988776655",
+      "email": "operations@ecorecycle.co.in",
+      "passwordOrPin": "1234",
+      "role": "recycler",
+      "city": "Thane",
+      "pincode": "400604",
+      "cpcbLicenseNumber": "CPCB/E-WASTE/MH/2023/0481",
+      "businessName": "EcoRecycle Central Aggregation Hub",
+      "totalEarnings": 215000,
+      "totalWasteHandledKg": 6540,
+      "transactionsCount": 156,
+      "createdAt": "2025-11-20T09:00:00.000Z",
+      "lastLoginAt": "2026-09-08T17:04:04.076Z"
+    },
+    {
+      "id": "usr_1788887061775_j6xhg",
+      "name": "Amit Patel",
+      "phone": "9819999888",
+      "passwordOrPin": "4321",
+      "role": "seller",
+      "city": "Pune",
+      "pincode": "411001",
+      "totalEarnings": 0,
+      "totalWasteHandledKg": 0,
+      "transactionsCount": 0,
+      "createdAt": "2026-09-08T17:04:21.775Z",
+      "lastLoginAt": "2026-09-08T17:04:21.775Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "TXN-EPR-2026-001",
+      "userId": "usr_collector_01",
+      "userName": "Ramesh Kabadiwala",
+      "category": "Copper Wire & Motors",
+      "weightKg": 28.5,
+      "ratePerKg": 460,
+      "totalAmount": 13110,
+      "recyclerName": "EcoRecycle Solutions Pvt Ltd",
+      "cpcbRegNumber": "CPCB/E-WASTE/MH/2023/0481",
+      "paymentMethod": "UPI Instant",
+      "utrNumber": "UPI/20260908/7829104",
+      "status": "paid",
+      "timestamp": 1788714244076,
+      "createdAt": "2026-09-06T17:04:04.076Z"
+    },
+    {
+      "id": "TXN-EPR-2026-002",
+      "userId": "usr_collector_01",
+      "userName": "Ramesh Kabadiwala",
+      "category": "PCBs & Circuit Boards",
+      "weightKg": 14,
+      "ratePerKg": 380,
+      "totalAmount": 5320,
+      "recyclerName": "Maharshi Metals & E-Waste Hub",
+      "cpcbRegNumber": "CPCB/E-WASTE/MH/2024/0112",
+      "paymentMethod": "AEPS Direct Aadhaar",
+      "utrNumber": "AEPS/20260907/991203",
+      "status": "paid",
+      "timestamp": 1788800644076,
+      "createdAt": "2026-09-07T17:04:04.076Z"
+    }
+  ],
+  "pickups": [
+    {
+      "id": "PKP-2026-0901",
+      "userId": "usr_seller_01",
+      "userName": "Sunita Sharma",
+      "phone": "9876543210",
+      "address": "Flat 402, Green Heights, Sector 19, Vashi",
+      "city": "Navi Mumbai",
+      "category": "Small Home Appliances",
+      "estimatedWeightKg": 12,
+      "date": "Today",
+      "timeSlot": "14:00 - 16:00",
+      "status": "accepted",
+      "assignedCollectorName": "Ramesh Kabadiwala",
+      "assignedCollectorPhone": "9820011982",
+      "createdAt": "2026-09-08T17:04:04.076Z"
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": "2026-09-08T17:04:21.775Z"
+}

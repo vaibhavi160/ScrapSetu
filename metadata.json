@@ -1,0 +1,6 @@
+{
+  "name": "ScrapSetu",
+  "description": "Kabadiwala Connect — AI-assisted waste classification, fair pricing, and traceable digital ledger connecting informal scrap collectors to authorized recyclers.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
