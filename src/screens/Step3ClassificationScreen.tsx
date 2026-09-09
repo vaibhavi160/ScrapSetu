@@ -14,6 +14,7 @@ import { playChime } from '../utils/audioSpeech';
 import { logClassificationRecord } from '../utils/storage';
 import { getApiUrl } from '../utils/apiConfig';
 import { classifyScrapLocally } from '../utils/imageClassifier';
+import { classifyScrapWithAi } from '../utils/geminiClient';
 
 interface Step3ClassificationScreenProps {
   language: Language;
@@ -75,7 +76,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
   const [structural, setStructural] = useState<'intact' | 'damaged'>('intact');
   const [aiModelSource, setAiModelSource] = useState<string>('gemini-3.8-flash');
 
-  // Trigger real AI classification via server endpoint
+  // Trigger real AI classification via server endpoint or direct Gemini fallback
   const runClassification = useCallback(async () => {
     setLoading(true);
     setScanStepMessage(
@@ -87,22 +88,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
     );
 
     try {
-      const targetUrl = getApiUrl('/api/classify');
-      const res = await fetch(targetUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: photoUrl,
-          language,
-          presetIndex,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server returned status ${res.status}`);
-      }
-
-      const data = await res.json();
+      const data = await classifyScrapWithAi(photoUrl, presetIndex, language);
 
       const cat: WasteCategory = data.category || 'Plastic';
       const conf = typeof data.confidence === 'number' ? data.confidence : 0.85;
@@ -133,7 +119,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
         playChime('success');
       }
     } catch (err) {
-      console.warn('Fallback to client vision classifier due to network/server:', err);
+      console.warn('Fallback to client vision classifier due to error:', err);
       const local = await classifyScrapLocally(photoUrl, presetIndex);
 
       setPredictedCategory(local.category);
