@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Database, RefreshCw, User, CheckCircle, MapPin, Phone, CreditCard, ShieldCheck, FileText, Truck, ArrowUpDown, Layers, Recycle } from 'lucide-react';
+import { X, Database, RefreshCw, User, CheckCircle, MapPin, Phone, CreditCard, ShieldCheck, FileText, Truck, ArrowUpDown, Layers, Recycle, Plus } from 'lucide-react';
 import { UserProfile, Language, WasteCategoryInfo, Recycler } from '../types';
 import { fetchDatabaseRecords, fetchDatabaseSummary } from '../utils/authStorage';
 import { playChime } from '../utils/audioSpeech';
@@ -7,11 +7,13 @@ import {
   auth,
   fetchCategoriesFromFirestore, 
   fetchRecyclersFromFirestore, 
+  fetchCollectorWasteFromFirestore,
   seedCategoriesToFirestore, 
   seedRecyclersToFirestore,
   saveUserToFirestore 
 } from '../firebase';
 import { WASTE_CATEGORIES, MOCK_RECYCLERS } from '../data/mockData';
+import { AddRecyclerModal } from './AddRecyclerModal';
 
 interface DatabaseViewerModalProps {
   isOpen: boolean;
@@ -30,13 +32,14 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
   onLogout,
   language,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'users' | 'categories' | 'recyclers' | 'transactions' | 'pickups'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'users' | 'waste' | 'categories' | 'recyclers' | 'transactions' | 'pickups'>('profile');
   const [dbData, setDbData] = useState<{
     users?: any[];
     transactions?: any[];
     pickups?: any[];
     lastUpdated?: string;
   }>({});
+  const [wasteRecords, setWasteRecords] = useState<any[]>([]);
   const [categories, setCategories] = useState<WasteCategoryInfo[]>(WASTE_CATEGORIES);
   const [recyclers, setRecyclers] = useState<Recycler[]>(MOCK_RECYCLERS);
   const [summary, setSummary] = useState<any>(null);
@@ -51,6 +54,7 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
     businessName: currentUser?.businessName || '',
   });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isAddRecyclerOpen, setIsAddRecyclerOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -68,11 +72,13 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [records, sum, cats, recs] = await Promise.all([
+      const collectorId = currentUser?.id || auth.currentUser?.uid || 'COL-MUM-8910';
+      const [records, sum, cats, recs, waste] = await Promise.all([
         fetchDatabaseRecords(),
         fetchDatabaseSummary(),
         fetchCategoriesFromFirestore(),
         fetchRecyclersFromFirestore(),
+        fetchCollectorWasteFromFirestore(collectorId),
       ]);
       if (records.success) {
         setDbData(records);
@@ -85,6 +91,9 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
       }
       if (recs && recs.length > 0) {
         setRecyclers(recs);
+      }
+      if (waste && waste.length > 0) {
+        setWasteRecords(waste);
       }
     } catch (err) {
       console.error('Failed to reload database:', err);
@@ -183,7 +192,14 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
         <div className="shrink-0 bg-[#176B45] text-white px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between border-b border-[#125837]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0">
-              <img src="/ScrapSetu.png" alt="Logo" className="w-full h-full object-contain" />
+              <img
+                src="/logo-icon.png"
+                alt="Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/ScrapSetu.png';
+                }}
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -242,6 +258,20 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
             <span>{language === 'hi' ? 'डेटाबेस उपयोगकर्ता' : 'Users & Auth'}</span>
             <span className="bg-[#DDE6E0] text-[#17231D] text-[10px] px-1.5 py-0.2 rounded-full font-bold">
               {dbData.users?.length || 0}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('waste')}
+            className={`px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'waste'
+                ? 'border-[#176B45] text-[#176B45]'
+                : 'border-transparent text-[#66736C] hover:text-[#17231D]'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>{language === 'hi' ? 'कबाड़ डेटा (Firestore)' : 'Waste Records (Firestore)'}</span>
+            <span className="bg-[#176B45]/15 text-[#176B45] text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              {wasteRecords.length}
             </span>
           </button>
           <button
@@ -516,6 +546,81 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
             </div>
           )}
 
+          {/* TAB: WASTE DATA IN FIRESTORE */}
+          {activeTab === 'waste' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs px-1">
+                <div>
+                  <span className="font-bold text-[#17231D]">
+                    {language === 'hi' ? 'Firestore कबाड़ डेटा (वेस्ट रिकॉर्ड्स):' : 'Firestore Waste Collection (waste):'}
+                  </span>
+                  <p className="text-[11px] text-[#66736C]">
+                    {language === 'hi' ? 'कबाड़ी द्वारा एकत्रित किया गया वास्तविक वजन, दर और कमाई' : 'Scrap waste lots logged with weight, rates & collector earnings'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadData}
+                  disabled={isLoading}
+                  className="px-2.5 py-1.5 bg-[#EAF6EF] text-[#176B45] hover:bg-[#176B45] hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>{language === 'hi' ? 'रीफ्रेश' : 'Refresh'}</span>
+                </button>
+              </div>
+
+              {wasteRecords.length === 0 ? (
+                <div className="p-8 text-center bg-[#F7F9F8] border border-dashed border-[#DDE6E0] rounded-2xl">
+                  <Database className="w-8 h-8 text-[#66736C] mx-auto mb-2 opacity-50" />
+                  <p className="text-xs font-bold text-[#17231D]">
+                    {language === 'hi' ? 'कोई कबाड़ रिकॉर्ड नहीं मिला' : 'No waste records found in Firestore yet'}
+                  </p>
+                  <p className="text-[11px] text-[#66736C] mt-1">
+                    {language === 'hi'
+                      ? 'जैसे ही आप नए कबाड़ का वजन और उचित मूल्य तय करेंगे, वह यहां Firestore डेटाबेस में दिखेगा।'
+                      : 'Scan scrap, confirm weight and fair price to automatically persist waste data to Firestore.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {wasteRecords.map((w: any) => (
+                    <div key={w.id} className="p-3 bg-[#F7F9F8] border border-[#DDE6E0] rounded-2xl flex items-center justify-between hover:border-[#176B45]/40 transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#17231D]">{w.categoryName}</span>
+                          <span className="font-mono text-[10px] bg-white px-1.5 py-0.2 rounded-md border border-[#DDE6E0]">
+                            {w.id}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.2 font-bold rounded-md uppercase ${
+                            w.status === 'paid' ? 'bg-[#EAF6EF] text-[#176B45]' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {w.status || 'scanned'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#66736C] mt-0.5">
+                          वजन: <span className="font-bold text-[#17231D]">{w.weightKg} kg</span> • दर: ₹{w.ratePerKg}/kg • स्वच्छता: {w.cleanliness || 'clean'}
+                        </p>
+                        <p className="text-[10px] text-[#66736C]">
+                          कलेक्टर: {w.collectorName} • {new Date(w.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-black text-[#176B45] block">
+                          ₹{Number(w.totalAmount || 0).toLocaleString('en-IN')}
+                        </span>
+                        {w.fairAdvantageAmount ? (
+                          <span className="text-[10px] text-[#176B45] font-semibold">
+                            +₹{w.fairAdvantageAmount} बोनस
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB: CATEGORIES IN FIRESTORE */}
           {activeTab === 'categories' && (
             <div className="space-y-3">
@@ -590,15 +695,26 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
                     {language === 'hi' ? 'CPCB और राज्य प्रदूषण नियंत्रण बोर्ड सत्यापित हब' : 'CPCB and State Pollution Control Board certified hubs'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSyncRecyclersToFirestore}
-                  disabled={isLoading}
-                  className="px-2.5 py-1.5 bg-[#EAF6EF] text-[#176B45] hover:bg-[#176B45] hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>{language === 'hi' ? 'Firestore में सिंक करें' : 'Sync to Firestore'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddRecyclerOpen(true)}
+                    className="px-2.5 py-1.5 bg-[#176B45] text-white hover:bg-[#125837] rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{language === 'hi' ? '+ नया रीसाइक्लर जोड़ें' : '+ Add Recycler(s)'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSyncRecyclersToFirestore}
+                    disabled={isLoading}
+                    className="px-2.5 py-1.5 bg-[#EAF6EF] text-[#176B45] hover:bg-[#176B45] hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span>{language === 'hi' ? 'सिंक करें' : 'Sync'}</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2.5">
@@ -619,7 +735,7 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="text-xs font-black text-[#176B45] block">
-                          {(rec.rateMultiplier * 100).toFixed(0)}% Rate
+                          {((rec.priceMultiplier ?? rec.rateMultiplier ?? 1.05) * 100).toFixed(0)}% Rate
                         </span>
                         <span className="text-[10px] text-amber-700 font-bold">
                           ⭐ {rec.rating} / 5.0
@@ -635,12 +751,28 @@ export const DatabaseViewerModal: React.FC<DatabaseViewerModalProps> = ({
                         </span>
                       ))}
                       <span className="ml-auto text-[10px] text-[#66736C]">
-                        📞 {rec.contactPhone}
+                        📞 {rec.phone || rec.contactPhone || '+91 98201 12345'}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Add Recycler Modal within Database Viewer */}
+              <AddRecyclerModal
+                isOpen={isAddRecyclerOpen}
+                onClose={() => setIsAddRecyclerOpen(false)}
+                onRecyclersAdded={() => {
+                  loadData();
+                }}
+                collectorLoc={{
+                  lat: 19.076,
+                  lng: 72.8777,
+                  areaName: 'Dharavi / Kurla, Mumbai',
+                  state: 'Maharashtra',
+                }}
+                language={language}
+              />
             </div>
           )}
 

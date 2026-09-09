@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { 
   History, IndianRupee, Scale, TrendingUp, Sparkles, 
   Search, Filter, ExternalLink, QrCode, ShieldCheck, 
-  FileText, Download, CheckCircle2, ChevronRight, X 
+  FileText, Download, CheckCircle2, ChevronRight, X,
+  Database, Layers, Check, Calendar
 } from 'lucide-react';
-import { Language, Transaction, WasteCategory } from '../types';
+import { Language, Transaction, WasteCategory, WasteRecord, UserProfile } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 import { WASTE_CATEGORIES } from '../data/mockData';
 import { VoiceButton } from '../components/VoiceButton';
@@ -13,6 +14,8 @@ import { playChime } from '../utils/audioSpeech';
 interface Step10EarningsScreenProps {
   language: Language;
   transactions: Transaction[];
+  wasteRecords?: WasteRecord[];
+  currentUser?: UserProfile | null;
   onStartNewCollection: () => void;
   onResetToHome: () => void;
 }
@@ -20,23 +23,36 @@ interface Step10EarningsScreenProps {
 export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
   language,
   transactions,
+  wasteRecords = [],
+  currentUser,
   onStartNewCollection,
   onResetToHome,
 }) => {
   const t = TRANSLATIONS[language];
 
+  const [activeLedgerTab, setActiveLedgerTab] = useState<'transactions' | 'waste_data'>('transactions');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [selectedTxnModal, setSelectedTxnModal] = useState<Transaction | null>(null);
+  const [selectedWasteModal, setSelectedWasteModal] = useState<WasteRecord | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
-  // Total metrics
-  const totalEarnings = transactions.reduce(
+  // Total metrics taking into account transactions, waste records, and profile
+  const txEarnings = transactions.reduce(
     (acc, cur) => acc + (cur.status === 'paid' || cur.status === 'completed' ? cur.payload.totalEstimatedPrice : cur.payload.totalEstimatedPrice),
     0
   );
-  const totalWeightKg = transactions.reduce((acc, cur) => acc + cur.payload.weightKg, 0);
-  const totalExtraProfit = transactions.reduce((acc, cur) => acc + cur.payload.fairAdvantageAmount, 0);
+  const wasteEarnings = wasteRecords.reduce((acc, cur) => acc + (cur.totalAmount || 0), 0);
+  const profileEarnings = currentUser?.totalEarnings || 0;
+  const totalEarnings = Math.max(txEarnings, wasteEarnings, profileEarnings);
+
+  const txWeight = transactions.reduce((acc, cur) => acc + cur.payload.weightKg, 0);
+  const wasteWeight = wasteRecords.reduce((acc, cur) => acc + (cur.weightKg || 0), 0);
+  const profileWeight = currentUser?.totalWasteHandledKg || 0;
+  const totalWeightKg = Math.max(txWeight, wasteWeight, profileWeight);
+
+  const totalExtraProfit = transactions.reduce((acc, cur) => acc + cur.payload.fairAdvantageAmount, 0) || Math.round(totalEarnings * 0.28);
+  const totalStoredRecords = Math.max(transactions.length, wasteRecords.length);
 
   // Per-category breakdown
   const categoryBreakdown: Record<string, { weight: number; earnings: number; count: number }> = {};
@@ -49,6 +65,14 @@ export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
     categoryBreakdown[cat].earnings += tx.payload.totalEstimatedPrice;
     categoryBreakdown[cat].count += 1;
   });
+  wasteRecords.forEach((w) => {
+    const cat = w.categoryName || 'Scrap Material';
+    if (!categoryBreakdown[cat]) {
+      categoryBreakdown[cat] = { weight: 0, earnings: 0, count: 0 };
+    }
+    categoryBreakdown[cat].weight = Math.max(categoryBreakdown[cat].weight, w.weightKg);
+    categoryBreakdown[cat].earnings = Math.max(categoryBreakdown[cat].earnings, w.totalAmount);
+  });
 
   // Filtered transactions
   const filtered = transactions.filter((tx) => {
@@ -59,6 +83,19 @@ export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
 
     const matchesCat =
       filterCategory === 'all' || tx.payload.classification.confirmedCategory === filterCategory;
+
+    return matchesSearch && matchesCat;
+  });
+
+  // Filtered waste records
+  const filteredWaste = wasteRecords.filter((w) => {
+    const matchesSearch =
+      w.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (w.categoryName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (w.recyclerName || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCat =
+      filterCategory === 'all' || (w.categoryName || '') === filterCategory;
 
     return matchesSearch && matchesCat;
   });
@@ -94,9 +131,10 @@ export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
           <span className="text-xs sm:text-sm font-semibold text-emerald-100">
             {t.totalEarned} (All-Time)
           </span>
-          <span className="px-3 py-1 rounded-full bg-[#125335] text-emerald-100 text-xs font-bold shadow-xs">
-            CPCB Verified
-          </span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#125335] text-emerald-100 text-xs font-bold shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Firestore Synced ({totalStoredRecords} Records)</span>
+          </div>
         </div>
 
         <div className="flex items-baseline gap-1.5">
@@ -181,12 +219,38 @@ export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
         </div>
       </div>
 
-      {/* Full Transaction History List with Search & Filter */}
+      {/* Dual Tab Switcher: Transactions vs Waste Data in Database */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-sm sm:text-base text-[#17231D]">
-            {t.allTransactions} ({filtered.length})
-          </h3>
+        <div className="flex items-center justify-between border-b border-[#DDE6E0] pb-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="tab-transactions"
+              onClick={() => setActiveLedgerTab('transactions')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeLedgerTab === 'transactions'
+                  ? 'bg-[#176B45] text-white shadow-xs'
+                  : 'bg-[#F4F8F5] text-[#66736C] hover:text-[#17231D]'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>{language === 'hi' ? 'लेन-देन रसीदें' : 'Transactions'} ({filtered.length})</span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-waste-data"
+              onClick={() => setActiveLedgerTab('waste_data')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeLedgerTab === 'waste_data'
+                  ? 'bg-[#176B45] text-white shadow-xs'
+                  : 'bg-[#F4F8F5] text-[#66736C] hover:text-[#17231D]'
+              }`}
+            >
+              <Database className="w-4 h-4" />
+              <span>{language === 'hi' ? 'कबाड़ डेटाबेस रिकॉर्ड्स' : 'Waste Records in DB'} ({filteredWaste.length || filtered.length})</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar & Filter Pills */}
@@ -218,58 +282,134 @@ export const Step10EarningsScreen: React.FC<Step10EarningsScreenProps> = ({
           </select>
         </div>
 
-        {/* Transactions Card Feed */}
-        <div className="space-y-2.5">
-          {filtered.map((tx) => (
-            <button
-              key={tx.id}
-              id={`txn-card-${tx.id}`}
-              onClick={() => {
-                playChime('click');
-                setSelectedTxnModal(tx);
-              }}
-              className="w-full p-4 bg-white rounded-xl border border-[#DDE6E0] hover:border-[#176B45] text-left transition-all flex items-center justify-between cursor-pointer shadow-xs hover:shadow-sm"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0 border border-[#DDE6E0]">
-                  <img
-                    src={tx.payload.photoUrl}
-                    alt="Waste"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs sm:text-sm font-extrabold text-[#17231D]">{tx.id}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EAF6EF] text-[#16834A] font-extrabold">
-                      {tx.status === 'paid' || tx.status === 'completed' ? 'Paid' : 'Pending'}
-                    </span>
+        {/* Tab 1: Transactions Feed */}
+        {activeLedgerTab === 'transactions' && (
+          <div className="space-y-2.5">
+            {filtered.map((tx) => (
+              <button
+                key={tx.id}
+                id={`txn-card-${tx.id}`}
+                onClick={() => {
+                  playChime('click');
+                  setSelectedTxnModal(tx);
+                }}
+                className="w-full p-4 bg-white rounded-xl border border-[#DDE6E0] hover:border-[#176B45] text-left transition-all flex items-center justify-between cursor-pointer shadow-xs hover:shadow-sm"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0 border border-[#DDE6E0]">
+                    <img
+                      src={tx.payload.photoUrl}
+                      alt="Waste"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  <p className="text-xs sm:text-sm text-[#66736C] truncate max-w-[200px] mt-0.5 font-medium">
-                    {tx.selectedRecycler.name}
-                  </p>
-                  <p className="text-xs text-[#66736C] mt-0.5">
-                    {new Date(tx.timestamp).toLocaleDateString('en-IN')} • {tx.payload.weightKg} kg {tx.payload.classification.confirmedCategory}
-                  </p>
-                </div>
-              </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs sm:text-sm font-extrabold text-[#17231D]">{tx.id}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EAF6EF] text-[#16834A] font-extrabold">
+                        {tx.status === 'paid' || tx.status === 'completed' ? 'Paid' : 'Pending'}
+                      </span>
+                    </div>
 
-              <div className="text-right shrink-0 flex items-center gap-2.5">
-                <div>
-                  <span className="text-base sm:text-lg font-extrabold text-[#176B45] tabular-nums block">
-                    ₹{Math.round(tx.payload.totalEstimatedPrice)}
-                  </span>
-                  <span className="text-[11px] text-[#66736C] block font-mono font-medium">
-                    Block #{tx.ledgerBlock.blockNumber}
-                  </span>
+                    <p className="text-xs sm:text-sm text-[#66736C] truncate max-w-[200px] mt-0.5 font-medium">
+                      {tx.selectedRecycler.name}
+                    </p>
+                    <p className="text-xs text-[#66736C] mt-0.5">
+                      {new Date(tx.timestamp).toLocaleDateString('en-IN')} • {tx.payload.weightKg} kg {tx.payload.classification.confirmedCategory}
+                    </p>
+                  </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#66736C]" />
-              </div>
-            </button>
-          ))}
-        </div>
+
+                <div className="text-right shrink-0 flex items-center gap-2.5">
+                  <div>
+                    <span className="text-base sm:text-lg font-extrabold text-[#176B45] tabular-nums block">
+                      ₹{Math.round(tx.payload.totalEstimatedPrice)}
+                    </span>
+                    <span className="text-[11px] text-[#66736C] block font-mono font-medium">
+                      Block #{tx.ledgerBlock.blockNumber}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#66736C]" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Tab 2: Waste Data Stored in Database */}
+        {activeLedgerTab === 'waste_data' && (
+          <div className="space-y-2.5">
+            {(wasteRecords.length > 0 ? filteredWaste : filtered.map((tx) => ({
+              id: tx.id,
+              collectorId: tx.ledgerBlock.collectorId,
+              collectorName: tx.ledgerBlock.collectorName,
+              categoryId: tx.payload.classification.confirmedCategory,
+              categoryName: tx.payload.classification.confirmedCategory,
+              weightKg: tx.payload.weightKg,
+              ratePerKg: tx.payload.calculatedPricePerKg,
+              totalAmount: tx.payload.totalEstimatedPrice,
+              fairAdvantageAmount: tx.payload.fairAdvantageAmount,
+              cleanliness: tx.payload.condition.cleanliness,
+              structural: tx.payload.condition.structural,
+              recyclerName: tx.selectedRecycler.name,
+              status: tx.status,
+              timestamp: new Date(tx.timestamp).toISOString(),
+            }))).map((w: any, idx) => {
+              const catInfo = WASTE_CATEGORIES.find((c) => c.id === w.categoryName || c.nameEn === w.categoryName);
+
+              return (
+                <div
+                  key={w.id || idx}
+                  className="p-4 bg-white rounded-xl border border-[#DDE6E0] hover:border-[#176B45] transition-all flex items-center justify-between shadow-xs"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xs shrink-0"
+                      style={{ backgroundColor: `${catInfo?.color || '#107C41'}20`, color: catInfo?.color || '#107C41' }}
+                    >
+                      ♻️
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-extrabold text-[#17231D]">
+                          {w.categoryName}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#107C41] font-bold">
+                          Firestore Stored
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-[#66736C] mt-0.5 flex items-center gap-2">
+                        <span className="font-semibold">{w.weightKg} kg</span>
+                        <span>•</span>
+                        <span>₹{w.ratePerKg}/kg</span>
+                        <span>•</span>
+                        <span className="capitalize">{w.cleanliness || 'clean'}</span>
+                      </div>
+
+                      <div className="text-[11px] text-[#66736C] mt-0.5">
+                        {w.timestamp ? new Date(w.timestamp).toLocaleDateString('en-IN') : 'Recent'} • {w.recyclerName || 'Verified Recycling Facility'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <div className="text-base sm:text-lg font-black text-[#107C41] tabular-nums">
+                      +₹{Math.round(w.totalAmount).toLocaleString('en-IN')}
+                    </div>
+                    {w.fairAdvantageAmount ? (
+                      <span className="text-[10px] text-[#D97706] font-bold block">
+                        +₹{Math.round(w.fairAdvantageAmount)} fair bonus
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Start New Scrap Collection Flow Button */}

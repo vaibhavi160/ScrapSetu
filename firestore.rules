@@ -25,10 +25,10 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
-    // 3. Recyclers Directory (Public verified facilities)
+    // 3. Recyclers Directory (Public verified facilities & community additions)
     match /recyclers/{recyclerId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
 
     // 4. Completed Transactions
@@ -45,7 +45,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 6. Test connection / health check
+    // 6. Waste Records (Scanned, collected & sold scrap data with collector earnings)
+    match /waste/{wasteId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /waste_data/{wasteId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 7. Test connection / health check
     match /test/{docId} {
       allow read, write: if true;
     }

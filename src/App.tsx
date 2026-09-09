@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Language, FlowStep, WasteCategory, AppSettings, 
   Transaction, Recycler, PickupSchedule, ClassificationResult, PhotoQualityAssessment,
-  UserProfile
+  UserProfile, WasteRecord
 } from './types';
 import { TRANSLATIONS } from './utils/translations';
 import { 
@@ -28,7 +28,10 @@ import {
   seedRecyclersToFirestore, 
   subscribeCategories, 
   subscribeRecyclers, 
-  saveTransactionToFirestore, 
+  saveTransactionToFirestore,
+  saveWasteDataToFirestore,
+  subscribeCollectorWaste,
+  subscribeCollectorTransactions,
   signOutFromFirebase 
 } from './firebase';
 
@@ -40,6 +43,8 @@ import { ImpactDashboardModal } from './components/ImpactDashboardModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { DatabaseViewerModal } from './components/DatabaseViewerModal';
+import { SplashScreen } from './components/SplashScreen';
+import { BottomNav } from './components/BottomNav';
 
 // Step Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -56,6 +61,7 @@ import { Step10EarningsScreen } from './screens/Step10EarningsScreen';
 
 export default function App() {
   // App Settings & Auth state
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [settings, setSettings] = useState<AppSettings>(getStoredSettings());
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(getStoredUser());
   const [guestAccess, setGuestAccess] = useState<boolean>(false);
@@ -64,6 +70,8 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState<FlowStep>(1);
   const [activeModal, setActiveModal] = useState<'safety' | 'impact' | 'settings' | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>(getStoredTransactions());
+  const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([]);
+  const [recyclers, setRecyclers] = useState<Recycler[]>(MOCK_RECYCLERS);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(getPendingSyncItems().length);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -117,7 +125,10 @@ export default function App() {
 
     // 2. Real-time Recyclers listener (public read)
     const unsubRecs = subscribeRecyclers((recs) => {
-      console.log(`Synced ${recs.length} verified recyclers from Firebase Firestore`);
+      if (recs && recs.length > 0) {
+        setRecyclers(recs);
+        console.log(`Synced ${recs.length} verified recyclers from Firebase Firestore`);
+      }
     });
 
     // 3. Firebase Authentication state listener
@@ -168,6 +179,32 @@ export default function App() {
       unsubAuth();
     };
   }, []);
+
+  // 4. Real-time Waste Records & Transactions listener from Firestore
+  useEffect(() => {
+    const collectorId = currentUser?.id || auth.currentUser?.uid || 'COL-MUM-8910';
+    const unsubWaste = subscribeCollectorWaste(collectorId, (records) => {
+      if (records && records.length > 0) {
+        setWasteRecords(records);
+      }
+    });
+
+    const unsubTxns = subscribeCollectorTransactions(collectorId, (fireTxns) => {
+      if (fireTxns && fireTxns.length > 0) {
+        setTransactions((prev) => {
+          const map = new Map<string, Transaction>();
+          prev.forEach((t) => map.set(t.id, t));
+          fireTxns.forEach((t) => map.set(t.id, t));
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    return () => {
+      unsubWaste();
+      unsubTxns();
+    };
+  }, [currentUser?.id]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -234,7 +271,46 @@ export default function App() {
     fairAdvantageAmount: number;
   }) => {
     setPricingData(priceInfo);
+
+    // Save waste data record into Firestore database immediately
+    const collectorId = currentUser?.id || auth.currentUser?.uid || 'COL-MUM-8910';
+    const newWasteRecord: WasteRecord = {
+      id: `WST-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      collectorId,
+      collectorName: currentUser?.name || settings.collectorName || 'Scrap Collector',
+      categoryId: (classification.confirmedCategory || 'Scrap').toLowerCase().replace(/\s+/g, '_'),
+      categoryName: classification.confirmedCategory,
+      weightKg,
+      ratePerKg: priceInfo.calculatedPricePerKg,
+      totalAmount: priceInfo.totalEstimatedPrice,
+      fairAdvantageAmount: priceInfo.fairAdvantageAmount,
+      cleanliness: condition.cleanliness,
+      structural: condition.structural,
+      status: 'scanned',
+      timestamp: new Date().toISOString(),
+    };
+
+    saveWasteDataToFirestore(newWasteRecord).catch((err) => {
+      console.warn('Firestore waste save notice:', err);
+    });
+
+    setWasteRecords((prev) => [newWasteRecord, ...prev]);
     setCurrentStep(6);
+  };
+
+  // Step 6: Recyclers added dynamically
+  const handleRecyclersAdded = (newRecs: Recycler[]) => {
+    setRecyclers((prev) => {
+      const existingIds = new Set(prev.map((r) => r.id));
+      const toAdd = newRecs.filter((r) => !existingIds.has(r.id));
+      return [...toAdd, ...prev];
+    });
+    setToastMessage(
+      settings?.language === 'hi'
+        ? `${newRecs.length} नए अधिकृत रीसाइक्लर गूगल मैप्स व फायरबेस में सुरक्षित किए गए!`
+        : `Successfully saved ${newRecs.length} recycler(s) to Google Maps & Firebase!`
+    );
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   // Step 6 -> 7
@@ -340,9 +416,17 @@ export default function App() {
     setTransactions(getStoredTransactions());
     // Persist verified payment in server database and Firebase Firestore
     syncTransactionToDatabase(updatedTxn, currentUser);
-    saveTransactionToFirestore(updatedTxn, currentUser?.id || 'usr_collector_01').catch((err) => {
+    const collectorId = currentUser?.id || auth.currentUser?.uid || 'COL-MUM-8910';
+    saveTransactionToFirestore(updatedTxn, collectorId).catch((err) => {
       console.warn('Firestore transaction sync notice:', err);
     });
+    setWasteRecords((prev) =>
+      prev.map((w) =>
+        w.categoryName === updatedTxn.payload.classification.confirmedCategory
+          ? { ...w, status: 'paid' as const, transactionId: updatedTxn.id, recyclerName: updatedTxn.selectedRecycler.name }
+          : w
+      )
+    );
     setCurrentStep(10);
   };
 
@@ -386,6 +470,11 @@ export default function App() {
     setCurrentStep(1);
   };
 
+  // 1. Initial Splash Screen for 1.8s
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
   // Show Log In page firstly if someone opens the app and is not logged in
   if (!currentUser && !guestAccess) {
     return (
@@ -415,8 +504,35 @@ export default function App() {
     );
   }
 
+  const getActiveNavTab = (): 'home' | 'recyclers' | 'scan' | 'ledger' | 'settings' => {
+    if (activeModal === 'settings') return 'settings';
+    if (currentStep === 2) return 'scan';
+    if (currentStep === 6) return 'recyclers';
+    if (currentStep === 10) return 'ledger';
+    return 'home';
+  };
+
+  const handleNavTabChange = (tab: 'home' | 'recyclers' | 'scan' | 'ledger' | 'settings') => {
+    playChime('click');
+    if (tab === 'home') {
+      setActiveModal(null);
+      setCurrentStep(1);
+    } else if (tab === 'recyclers') {
+      setActiveModal(null);
+      setCurrentStep(6);
+    } else if (tab === 'scan') {
+      setActiveModal(null);
+      setCurrentStep(2);
+    } else if (tab === 'ledger') {
+      setActiveModal(null);
+      setCurrentStep(10);
+    } else if (tab === 'settings') {
+      setActiveModal('settings');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F7F9F8] text-[#17231D] flex flex-col selection:bg-[#176B45]/20 selection:text-[#176B45]">
+    <div className="min-h-screen bg-white text-[#17231D] flex flex-col selection:bg-[#107C41]/20 selection:text-[#107C41]">
       {/* Persistent Global Header */}
       <Header
         settings={settings}
@@ -448,10 +564,16 @@ export default function App() {
             setCurrentStep(step);
           }
         }}
+        onNavigateStep={(step) => {
+          if (step < currentStep) {
+            playChime('click');
+            setCurrentStep(step);
+          }
+        }}
       />
 
       {/* Responsive Main Content Wrapper */}
-      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6 pb-24">
         <main className="flex-1">
           {/* STEP 1: Home / Dashboard */}
           {currentStep === 1 && (
@@ -459,6 +581,7 @@ export default function App() {
               settings={settings}
               language={settings?.language || 'hi'}
               transactions={transactions}
+              wasteRecords={wasteRecords}
               pendingSyncCount={pendingSyncCount}
               onTriggerSync={handleTriggerSync}
               onStartCollection={() => {
@@ -539,6 +662,8 @@ export default function App() {
               calculatedPricePerKg={pricingData.calculatedPricePerKg}
               onSelectRecycler={handleSelectRecycler}
               onBack={() => setCurrentStep(5)}
+              recyclers={recyclers}
+              onAddRecyclers={handleRecyclersAdded}
             />
           )}
 
@@ -580,6 +705,8 @@ export default function App() {
             <Step10EarningsScreen
               language={settings.language}
               transactions={transactions}
+              wasteRecords={wasteRecords}
+              currentUser={currentUser}
               onStartNewCollection={handleStartNewCollection}
               onResetToHome={handleResetToHome}
             />
@@ -646,6 +773,23 @@ export default function App() {
           language={settings.language}
         />
       </div>
+
+      {/* Persistent Bottom Navigation Bar matching TrashWise */}
+      <BottomNav
+        currentStep={currentStep}
+        activeTab={getActiveNavTab()}
+        onNavigateStep={(step) => {
+          playChime('click');
+          setActiveModal(null);
+          setCurrentStep(step);
+        }}
+        onTabChange={handleNavTabChange}
+        onOpenSettings={() => {
+          playChime('click');
+          setActiveModal('settings');
+        }}
+        language={settings.language}
+      />
     </div>
   );
 }

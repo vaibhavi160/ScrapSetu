@@ -22,10 +22,12 @@ import {
   getDocFromServer,
   query,
   where,
-  limit
+  limit,
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { UserProfile, UserRole, WasteCategoryInfo, Recycler, Transaction } from './types';
+import { UserProfile, UserRole, WasteCategoryInfo, WasteCategory, Recycler, Transaction, WasteRecord } from './types';
 import { WASTE_CATEGORIES, MOCK_RECYCLERS } from './data/mockData';
 
 // Initialize Firebase App
@@ -42,6 +44,7 @@ export { onAuthStateChanged, type FirebaseUser };
 
 // Provider for Google Sign-In
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 export enum OperationType {
   CREATE = 'create',
@@ -139,11 +142,6 @@ export async function seedCategoriesToFirestore(): Promise<void> {
 
 // Seed / Synchronize Recyclers in Firestore
 export async function seedRecyclersToFirestore(): Promise<void> {
-  // Only authenticated users can write directory updates per Firestore security rules
-  if (!auth.currentUser) {
-    console.info('Skipping recyclers seed: User is not authenticated with Firebase Auth yet.');
-    return;
-  }
   const path = 'recyclers';
   try {
     for (const rec of MOCK_RECYCLERS) {
@@ -152,15 +150,26 @@ export async function seedRecyclersToFirestore(): Promise<void> {
       await setDoc(recDocRef, {
         id: safeId,
         name: rec.name.slice(0, 100),
+        cpcbRegNumber: (rec.cpcbRegNumber || 'CPCB/EPR-EW/2024/IND').slice(0, 60),
+        spcbCertified: !!rec.spcbCertified,
+        address: (rec.address || '').slice(0, 150),
+        city: (rec.city || 'Mumbai').slice(0, 60),
+        lat: Number(rec.lat || 19.0760),
+        lng: Number(rec.lng || 72.8777),
+        rating: Number(rec.rating || 4.8),
+        reviewCount: Number(rec.reviewCount || 10),
+        acceptedCategories: Array.isArray(rec.acceptedCategories) ? rec.acceptedCategories : ['E-waste'],
+        priceMultiplier: Number(rec.priceMultiplier || 1.05),
+        pickupAvailable: !!rec.pickupAvailable,
+        minPickupWeightKg: Number(rec.minPickupWeightKg || 10),
+        pickupTimeHours: Number(rec.pickupTimeHours || 3),
+        phone: (rec.phone || '').slice(0, 30),
+        verifiedBadge: !!rec.verifiedBadge,
         category: (rec.acceptedCategories[0] || 'E-waste').slice(0, 50),
         ratePerKg: Math.round(120 * (rec.priceMultiplier || 1)),
         distanceKm: Number(rec.distanceKm || 3.5),
         isVerified: !!rec.verifiedBadge,
         eprCertified: !!rec.spcbCertified,
-        rating: Number(rec.rating || 4.5),
-        address: (rec.address || 'Industrial Hub').slice(0, 100),
-        phone: rec.phone || '',
-        contactPerson: 'Authorized Facility Manager',
       }, { merge: true });
     }
   } catch (error) {
@@ -168,31 +177,126 @@ export async function seedRecyclersToFirestore(): Promise<void> {
   }
 }
 
-// Fetch categories from Firestore
-export async function fetchCategoriesFromFirestore(): Promise<WasteCategoryInfo[]> {
-  const path = 'categories';
+// Helper to transform Firestore doc data into a full Recycler object
+export function mapDocToRecycler(data: any, docId: string): Recycler {
+  const matched = MOCK_RECYCLERS.find((r) => r.id === (data.id || docId));
+  
+  let acceptedCats: WasteCategory[] = [];
+  if (Array.isArray(data.acceptedCategories) && data.acceptedCategories.length > 0) {
+    acceptedCats = data.acceptedCategories;
+  } else if (data.category) {
+    acceptedCats = [data.category];
+  } else if (matched) {
+    acceptedCats = matched.acceptedCategories;
+  } else {
+    acceptedCats = ['E-waste', 'PCBs & Circuit Boards', 'Metal', 'Plastic'];
+  }
+
+  return {
+    id: data.id || docId,
+    name: data.name || (matched ? matched.name : 'Authorized Recycler Facility'),
+    cpcbRegNumber: data.cpcbRegNumber || (matched ? matched.cpcbRegNumber : 'CPCB/EPR-EW/2024/IND'),
+    spcbCertified: data.spcbCertified ?? data.eprCertified ?? (matched ? matched.spcbCertified : true),
+    address: data.address || (matched ? matched.address : 'Authorized Scrap Processing Cluster'),
+    city: data.city || (matched ? matched.city : 'Mumbai'),
+    lat: typeof data.lat === 'number' && !isNaN(data.lat) ? data.lat : (matched ? matched.lat : 19.0760),
+    lng: typeof data.lng === 'number' && !isNaN(data.lng) ? data.lng : (matched ? matched.lng : 72.8777),
+    rating: typeof data.rating === 'number' ? data.rating : (matched ? matched.rating : 4.8),
+    reviewCount: typeof data.reviewCount === 'number' ? data.reviewCount : (matched ? matched.reviewCount : 85),
+    acceptedCategories: acceptedCats,
+    priceMultiplier: typeof data.priceMultiplier === 'number' ? data.priceMultiplier : (matched ? matched.priceMultiplier : 1.05),
+    pickupAvailable: typeof data.pickupAvailable === 'boolean' ? data.pickupAvailable : (matched ? matched.pickupAvailable : true),
+    minPickupWeightKg: typeof data.minPickupWeightKg === 'number' ? data.minPickupWeightKg : (matched ? matched.minPickupWeightKg : 10),
+    pickupTimeHours: typeof data.pickupTimeHours === 'number' ? data.pickupTimeHours : (matched ? matched.pickupTimeHours : 3),
+    phone: data.phone || (matched ? matched.phone : '+91 98200 12345'),
+    verifiedBadge: data.verifiedBadge ?? data.isVerified ?? (matched ? matched.verifiedBadge : true),
+  };
+}
+
+// Add or update a single Recycler in Firestore
+export async function addRecyclerToFirestore(rec: Recycler): Promise<void> {
+  const safeId = (rec.id || `rec-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `recyclers/${safeId}`;
   try {
-    const snapshot = await getDocs(collection(db, path));
-    if (snapshot.empty) {
-      // If empty, return mock data
-      return WASTE_CATEGORIES;
-    }
-    const list: WasteCategoryInfo[] = [];
-    snapshot.forEach((d) => {
-      const data = d.data();
-      const matched = WASTE_CATEGORIES.find((c) => c.id === data.id);
-      if (matched) {
-        list.push({
-          ...matched,
-          marketRatePerKg: data.ratePerKg ?? matched.marketRatePerKg,
-          basePricePerKg: data.baseRatePerKg ?? matched.basePricePerKg,
-        });
-      }
-    });
-    return list.length > 0 ? list : WASTE_CATEGORIES;
+    const recDocRef = doc(db, 'recyclers', safeId);
+    await setDoc(recDocRef, {
+      id: safeId,
+      name: rec.name.slice(0, 100),
+      cpcbRegNumber: (rec.cpcbRegNumber || 'CPCB/EPR-EW/2024/IND').slice(0, 60),
+      spcbCertified: !!rec.spcbCertified,
+      address: (rec.address || '').slice(0, 150),
+      city: (rec.city || 'Mumbai').slice(0, 60),
+      lat: Number(rec.lat || 19.0760),
+      lng: Number(rec.lng || 72.8777),
+      rating: Number(rec.rating || 4.8),
+      reviewCount: Number(rec.reviewCount || 10),
+      acceptedCategories: Array.isArray(rec.acceptedCategories) ? rec.acceptedCategories : ['E-waste'],
+      priceMultiplier: Number(rec.priceMultiplier || 1.05),
+      pickupAvailable: !!rec.pickupAvailable,
+      minPickupWeightKg: Number(rec.minPickupWeightKg || 10),
+      pickupTimeHours: Number(rec.pickupTimeHours || 3),
+      phone: (rec.phone || '').slice(0, 30),
+      verifiedBadge: !!rec.verifiedBadge,
+      category: (rec.acceptedCategories?.[0] || 'E-waste').slice(0, 50),
+      isVerified: !!rec.verifiedBadge,
+      eprCertified: !!rec.spcbCertified,
+      createdAt: new Date().toISOString(),
+    }, { merge: true });
   } catch (error) {
-    console.warn('Could not read categories from Firestore, falling back to local data:', error);
-    return WASTE_CATEGORIES;
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+// Add multiple Recyclers to Firestore in a batch
+export async function addMultipleRecyclersToFirestore(recyclers: Recycler[]): Promise<void> {
+  if (!recyclers || recyclers.length === 0) return;
+  const path = 'recyclers';
+  try {
+    const batch = writeBatch(db);
+    recyclers.forEach((rec, idx) => {
+      const safeId = (rec.id || `rec-${Date.now()}-${idx}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+      const recDocRef = doc(db, 'recyclers', safeId);
+      batch.set(recDocRef, {
+        id: safeId,
+        name: rec.name.slice(0, 100),
+        cpcbRegNumber: (rec.cpcbRegNumber || 'CPCB/EPR-EW/2024/IND').slice(0, 60),
+        spcbCertified: !!rec.spcbCertified,
+        address: (rec.address || '').slice(0, 150),
+        city: (rec.city || 'Mumbai').slice(0, 60),
+        lat: Number(rec.lat || 19.0760),
+        lng: Number(rec.lng || 72.8777),
+        rating: Number(rec.rating || 4.8),
+        reviewCount: Number(rec.reviewCount || 10),
+        acceptedCategories: Array.isArray(rec.acceptedCategories) ? rec.acceptedCategories : ['E-waste'],
+        priceMultiplier: Number(rec.priceMultiplier || 1.05),
+        pickupAvailable: !!rec.pickupAvailable,
+        minPickupWeightKg: Number(rec.minPickupWeightKg || 10),
+        pickupTimeHours: Number(rec.pickupTimeHours || 3),
+        phone: (rec.phone || '').slice(0, 30),
+        verifiedBadge: !!rec.verifiedBadge,
+        category: (rec.acceptedCategories?.[0] || 'E-waste').slice(0, 50),
+        isVerified: !!rec.verifiedBadge,
+        eprCertified: !!rec.spcbCertified,
+        createdAt: new Date().toISOString(),
+      }, { merge: true });
+    });
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+// Delete a recycler from Firestore
+export async function deleteRecyclerFromFirestore(recyclerId: string): Promise<void> {
+  const safeId = recyclerId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `recyclers/${safeId}`;
+  try {
+    await deleteDoc(doc(db, 'recyclers', safeId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    throw error;
   }
 }
 
@@ -206,22 +310,38 @@ export async function fetchRecyclersFromFirestore(): Promise<Recycler[]> {
     }
     const list: Recycler[] = [];
     snapshot.forEach((d) => {
-      const data = d.data();
-      const matched = MOCK_RECYCLERS.find((r) => r.id === data.id);
-      if (matched) {
-        list.push({
-          ...matched,
-          verifiedBadge: data.isVerified ?? matched.verifiedBadge,
-          spcbCertified: data.eprCertified ?? matched.spcbCertified,
-          rating: data.rating ?? matched.rating,
-        });
-      }
+      list.push(mapDocToRecycler(d.data(), d.id));
     });
     return list.length > 0 ? list : MOCK_RECYCLERS;
   } catch (error) {
     console.warn('Could not read recyclers from Firestore, falling back to local data:', error);
     return MOCK_RECYCLERS;
   }
+}
+
+// Fetch categories from Firestore
+export async function fetchCategoriesFromFirestore(): Promise<WasteCategoryInfo[]> {
+  try {
+    const snap = await getDocs(collection(db, 'categories'));
+    if (!snap.empty) {
+      const list: WasteCategoryInfo[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        const matched = WASTE_CATEGORIES.find((c) => c.id === data.id);
+        if (matched) {
+          list.push({
+            ...matched,
+            marketRatePerKg: data.ratePerKg ?? matched.marketRatePerKg,
+            basePricePerKg: data.baseRatePerKg ?? matched.basePricePerKg,
+          });
+        }
+      });
+      if (list.length > 0) return list;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch categories from Firestore:', err);
+  }
+  return WASTE_CATEGORIES;
 }
 
 // Subscribe to Categories in Firestore
@@ -255,16 +375,7 @@ export function subscribeRecyclers(callback: (recyclers: Recycler[]) => void): (
     if (!snapshot.empty) {
       const list: Recycler[] = [];
       snapshot.forEach((d) => {
-        const data = d.data();
-        const matched = MOCK_RECYCLERS.find((r) => r.id === data.id);
-        if (matched) {
-          list.push({
-            ...matched,
-            verifiedBadge: data.isVerified ?? matched.verifiedBadge,
-            spcbCertified: data.eprCertified ?? matched.spcbCertified,
-            rating: data.rating ?? matched.rating,
-          });
-        }
+        list.push(mapDocToRecycler(d.data(), d.id));
       });
       if (list.length > 0) callback(list);
     }
@@ -318,6 +429,137 @@ export async function getUserFromFirestore(userId: string): Promise<UserProfile 
   }
 }
 
+// Save Waste Record to Firestore
+export async function saveWasteDataToFirestore(wasteRecord: WasteRecord): Promise<void> {
+  if (!auth.currentUser) {
+    console.info('Skipping Firestore waste save: User is not authenticated with Firebase Auth.');
+    return;
+  }
+  const effectiveCollectorId = auth.currentUser.uid;
+  const safeId = wasteRecord.id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `waste/${safeId}`;
+
+  try {
+    const wasteDocRef = doc(db, 'waste', safeId);
+    await setDoc(wasteDocRef, {
+      id: safeId,
+      collectorId: effectiveCollectorId,
+      collectorName: (wasteRecord.collectorName || 'Collector').slice(0, 100),
+      categoryId: (wasteRecord.categoryId || 'e_waste').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40),
+      categoryName: (wasteRecord.categoryName || 'Scrap Material').slice(0, 60),
+      weightKg: Number(wasteRecord.weightKg || 0),
+      ratePerKg: Number(wasteRecord.ratePerKg || 0),
+      totalAmount: Number(wasteRecord.totalAmount || 0),
+      fairAdvantageAmount: Number(wasteRecord.fairAdvantageAmount || 0),
+      cleanliness: wasteRecord.cleanliness || 'clean',
+      structural: wasteRecord.structural || 'intact',
+      recyclerId: (wasteRecord.recyclerId || '').slice(0, 64),
+      recyclerName: (wasteRecord.recyclerName || '').slice(0, 100),
+      status: wasteRecord.status || 'scanned',
+      timestamp: wasteRecord.timestamp || new Date().toISOString(),
+      transactionId: (wasteRecord.transactionId || '').slice(0, 64),
+    }, { merge: true });
+
+    // Also update collector profile metrics in Firestore
+    try {
+      const userRef = doc(db, 'users', effectiveCollectorId);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const u = userDoc.data();
+        await setDoc(userRef, {
+          totalEarnings: (u.totalEarnings || 0) + Number(wasteRecord.totalAmount || 0),
+          totalWasteHandledKg: (u.totalWasteHandledKg || 0) + Number(wasteRecord.weightKg || 0),
+          transactionsCount: (u.transactionsCount || 0) + 1,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+    } catch {
+      // Profile metrics update optional
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+// Subscribe to Collector's Waste Records in Firestore
+export function subscribeCollectorWaste(
+  collectorId: string,
+  callback: (records: WasteRecord[]) => void
+): () => void {
+  const path = 'waste';
+  try {
+    const q = query(
+      collection(db, path),
+      where('collectorId', '==', collectorId)
+    );
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list: WasteRecord[] = [];
+        snapshot.forEach((d) => {
+          list.push(d.data() as WasteRecord);
+        });
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        callback(list);
+      },
+      (error) => {
+        console.warn('Waste records snapshot listener notice:', error);
+      }
+    );
+  } catch (error) {
+    console.warn('Failed to setup waste subscription:', error);
+    return () => {};
+  }
+}
+
+// Subscribe to Collector's Transactions in Firestore
+export function subscribeCollectorTransactions(
+  collectorId: string,
+  callback: (txns: any[]) => void
+): () => void {
+  const path = 'transactions';
+  try {
+    const q = query(
+      collection(db, path),
+      where('collectorId', '==', collectorId)
+    );
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list: any[] = [];
+        snapshot.forEach((d) => {
+          list.push(d.data());
+        });
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        callback(list);
+      },
+      (error) => {
+        console.warn('Transactions snapshot listener notice:', error);
+      }
+    );
+  } catch (error) {
+    console.warn('Failed to setup transactions subscription:', error);
+    return () => {};
+  }
+}
+
+// Fetch Collector Waste Records from Firestore
+export async function fetchCollectorWasteFromFirestore(collectorId: string): Promise<WasteRecord[]> {
+  const path = 'waste';
+  try {
+    const q = query(collection(db, path), where('collectorId', '==', collectorId));
+    const snapshot = await getDocs(q);
+    const list: WasteRecord[] = [];
+    snapshot.forEach((d) => {
+      list.push(d.data() as WasteRecord);
+    });
+    return list;
+  } catch (error) {
+    console.warn('Could not fetch waste records from Firestore:', error);
+    return [];
+  }
+}
+
 // Save Transaction to Firestore
 export async function saveTransactionToFirestore(txn: Transaction, collectorId: string): Promise<void> {
   if (!auth.currentUser) {
@@ -344,6 +586,27 @@ export async function saveTransactionToFirestore(txn: Transaction, collectorId: 
       paymentMethod: txn.payment.method,
       timestamp: new Date(txn.timestamp).toISOString(),
       verified: true,
+    }, { merge: true });
+
+    // Also persist directly to waste collection in Firestore
+    const wasteDocRef = doc(db, 'waste', safeTxnId);
+    await setDoc(wasteDocRef, {
+      id: safeTxnId,
+      collectorId: effectiveCollectorId,
+      collectorName: (txn.ledgerBlock.collectorName || 'Collector').slice(0, 100),
+      categoryId: safeCatId,
+      categoryName: txn.payload.classification.confirmedCategory.slice(0, 60),
+      weightKg: Number(txn.payload.weightKg || 0),
+      ratePerKg: Number(txn.payload.calculatedPricePerKg || 0),
+      totalAmount: Number(txn.payload.totalEstimatedPrice || 0),
+      fairAdvantageAmount: Number(txn.payload.fairAdvantageAmount || 0),
+      cleanliness: txn.payload.condition?.cleanliness || 'clean',
+      structural: txn.payload.condition?.structural || 'intact',
+      recyclerId: txn.selectedRecycler?.id || '',
+      recyclerName: txn.selectedRecycler?.name || '',
+      status: txn.status === 'paid' || txn.status === 'completed' ? 'paid' : 'scanned',
+      timestamp: new Date(txn.timestamp).toISOString(),
+      transactionId: safeTxnId,
     }, { merge: true });
 
     // Also increment user profile metrics if doc exists
@@ -376,13 +639,20 @@ export async function signInWithGoogle(selectedRole: UserRole = 'collector'): Pr
     // Check if profile exists in Firestore
     const existing = await getUserFromFirestore(fbUser.uid);
     if (existing) {
-      return existing;
+      const updated: UserProfile = {
+        ...existing,
+        name: existing.name || fbUser.displayName || 'Scrap Partner',
+        email: existing.email || fbUser.email || undefined,
+        lastLoginAt: new Date().toISOString(),
+      };
+      saveUserToFirestore(updated).catch(() => {});
+      return updated;
     }
 
     // Create new profile
     const newProfile: UserProfile = {
       id: fbUser.uid,
-      name: fbUser.displayName || 'Scrap Partner',
+      name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Scrap Partner',
       email: fbUser.email || undefined,
       phone: fbUser.phoneNumber || '',
       role: selectedRole,

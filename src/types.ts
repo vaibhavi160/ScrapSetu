@@ -85,6 +85,25 @@ export interface WasteItemPayload {
   fairAdvantageAmount: number;
 }
 
+export interface WasteRecord {
+  id: string;
+  collectorId: string;
+  collectorName: string;
+  categoryId: string;
+  categoryName: string;
+  weightKg: number;
+  ratePerKg: number;
+  totalAmount: number;
+  fairAdvantageAmount?: number;
+  cleanliness?: 'clean' | 'dirty';
+  structural?: 'intact' | 'damaged';
+  recyclerId?: string;
+  recyclerName?: string;
+  status: 'scanned' | 'pending_pickup' | 'verified_handover' | 'paid' | 'completed';
+  timestamp: string;
+  transactionId?: string;
+}
+
 export interface Recycler {
   id: string;
   name: string;

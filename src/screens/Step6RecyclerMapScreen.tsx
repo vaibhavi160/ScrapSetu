@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   MapPin, Navigation, Star, Phone, CheckCircle, ShieldCheck, 
-  ExternalLink, Layers, ArrowUpDown, Check, ArrowRight, X, Clock, IndianRupee, Truck
+  ExternalLink, Layers, ArrowUpDown, Check, ArrowRight, X, Clock, IndianRupee, Truck, Plus
 } from 'lucide-react';
 import { Language, WasteCategory, Recycler } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
@@ -12,6 +12,8 @@ import {
 } from '../utils/geo';
 import { VoiceButton } from '../components/VoiceButton';
 import { playChime } from '../utils/audioSpeech';
+import { GoogleRecyclersMap } from '../components/GoogleRecyclersMap';
+import { AddRecyclerModal } from '../components/AddRecyclerModal';
 
 interface Step6RecyclerMapScreenProps {
   language: Language;
@@ -20,6 +22,8 @@ interface Step6RecyclerMapScreenProps {
   calculatedPricePerKg: number;
   onSelectRecycler: (recycler: Recycler) => void;
   onBack: () => void;
+  recyclers?: Recycler[];
+  onAddRecyclers?: (newRecs: Recycler[]) => void;
 }
 
 export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
@@ -29,6 +33,8 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   calculatedPricePerKg,
   onSelectRecycler,
   onBack,
+  recyclers = MOCK_RECYCLERS,
+  onAddRecyclers,
 }) => {
   const t = TRANSLATIONS[language];
 
@@ -45,6 +51,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   const [selectedRecyclerId, setSelectedRecyclerId] = useState<string | null>(null);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState<boolean>(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
   // Fetch real GPS on mount
   useEffect(() => {
@@ -54,13 +61,18 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   }, []);
 
   // Filter recyclers: ONLY show authorized recyclers accepting the current waste category
-  const filteredRecyclers = MOCK_RECYCLERS.filter((r) =>
+  // If no recyclers match the specific category, show all available verified facilities
+  const rawList = recyclers && recyclers.length > 0 ? recyclers : MOCK_RECYCLERS;
+  const categoryMatched = rawList.filter((r) =>
     r.acceptedCategories.includes(category)
-  ).map((r) => {
+  );
+  const candidateRecyclers = categoryMatched.length > 0 ? categoryMatched : rawList;
+
+  const processedRecyclers = candidateRecyclers.map((r) => {
     const straightKm = calculateHaversineDistanceKm(collectorLoc.lat, collectorLoc.lng, r.lat, r.lng);
     const drivingKm = calculateDrivingDistanceKm(straightKm);
     const drivingEta = calculateDrivingEtaMins(drivingKm);
-    const offeredPricePerKg = Math.round(calculatedPricePerKg * r.priceMultiplier * 10) / 10;
+    const offeredPricePerKg = Math.round(calculatedPricePerKg * (r.priceMultiplier || 1.05) * 10) / 10;
     const totalOffered = Math.round(offeredPricePerKg * weightKg);
 
     return {
@@ -73,7 +85,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   });
 
   // Sort
-  const sortedRecyclers = [...filteredRecyclers].sort((a, b) => {
+  const sortedRecyclers = [...processedRecyclers].sort((a, b) => {
     if (sortBy === 'distance') return (a.distanceKm || 0) - (b.distanceKm || 0);
     if (sortBy === 'price') return (b.totalOffered || 0) - (a.totalOffered || 0);
     return b.rating - a.rating;
@@ -101,6 +113,15 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
     onSelectRecycler(recycler);
   };
 
+  const handleRecyclersAdded = (newRecs: Recycler[]) => {
+    if (onAddRecyclers) {
+      onAddRecyclers(newRecs);
+    }
+    if (newRecs.length > 0) {
+      setSelectedRecyclerId(newRecs[0].id);
+    }
+  };
+
   const speechText =
     language === 'hi'
       ? `आपके पास ${sortedRecyclers.length} सीपीसीबी अधिकृत रिसाइकलर मिले हैं जो ${category} स्वीकार करते हैं। सबसे निकटतम रिसाइकलर ${sortedRecyclers[0]?.name} है जो ${sortedRecyclers[0]?.distanceKm} किमी दूर है।`
@@ -111,21 +132,41 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#DDE6E0]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DDE6E0]">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2.5">
-            <MapPin className="w-6 h-6 text-[#176B45]" />
-            <span>{t.compareRecyclers}</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
-            {t.nearYou} <strong className="text-[#176B45] font-semibold">{category}</strong>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2">
+              <MapPin className="w-6 h-6 text-[#176B45]" />
+              <span>{t.compareRecyclers}</span>
+            </h2>
+            <span className="text-xs bg-[#E8F3ED] text-[#176B45] font-black px-2.5 py-0.5 rounded-full border border-[#C5E1D1]">
+              Google Maps & Firebase Synced ({sortedRecyclers.length})
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-[#66736C] mt-1">
+            {t.nearYou} <strong className="text-[#176B45] font-semibold">{category}</strong> ({sortedRecyclers.length} {language === 'hi' ? 'सुविधाएं उपलब्ध' : 'facilities available'})
           </p>
         </div>
-        <VoiceButton textToSpeak={speechText} language={language} label={t.listenAudio} size="md" />
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            id="step6-add-recycler-btn"
+            onClick={() => {
+              playChime('click');
+              setIsAddModalOpen(true);
+            }}
+            className="bg-[#176B45] hover:bg-[#125335] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{language === 'hi' ? '+ रीसाइक्लर जोड़ें' : '+ Add Recycler(s)'}</span>
+          </button>
+          <VoiceButton textToSpeak={speechText} language={language} label={t.listenAudio} size="md" />
+        </div>
       </div>
 
       {/* View Switcher: Live Map vs Low-Bandwidth List */}
-      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-[#DDE6E0] shadow-xs">
+      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-[#DDE6E0] shadow-xs flex-wrap gap-2">
         <div className="inline-flex rounded-xl bg-[#F7F9F8] p-1 text-xs sm:text-sm font-bold border border-[#DDE6E0]">
           <button
             id="tab-map-view"
@@ -172,117 +213,58 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
       {/* MAP VIEW */}
       {activeTab === 'map' && (
         <div className="space-y-4">
-          {/* Interactive Styled Map Canvas */}
-          <div className="relative rounded-2xl overflow-hidden border border-[#DDE6E0] bg-[#E5E9E6] h-[300px] select-none shadow-xs">
-            {/* Map Roads & Geography Canvas background */}
-            <svg className="w-full h-full absolute inset-0 opacity-55 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#D1D5DB" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              {/* Main Arterial Roads */}
-              <path d="M-20,140 Q150,110 320,150 T600,130" fill="none" stroke="#FFFFFF" strokeWidth="12" />
-              <path d="M-20,140 Q150,110 320,150 T600,130" fill="none" stroke="#FDE047" strokeWidth="3" />
-              <path d="M120,-20 Q140,160 160,340" fill="none" stroke="#FFFFFF" strokeWidth="10" />
-              <path d="M260,-20 Q240,180 270,340" fill="none" stroke="#FFFFFF" strokeWidth="8" />
-              {/* Rail / Transit */}
-              <path d="M80,-20 L90,340" fill="none" stroke="#94A3B8" strokeWidth="2" strokeDasharray="6,4" />
-            </svg>
-
-            {/* GPS Location Pill */}
-            <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-full text-xs font-bold text-[#17231D] border border-[#DDE6E0] flex items-center gap-2 shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
-              <span className="truncate max-w-[200px]">{collectorLoc.areaName}</span>
-            </div>
-
-            {/* CPCB Verified Recyclers Overlay */}
-            <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[11px] text-[#66736C] font-semibold border border-[#DDE6E0] shadow-xs">
-              CPCB E-Waste Authorized Registry
-            </div>
-
-            {/* Collector Blue GPS Marker */}
-            <div
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
-              style={{ left: '38%', top: '62%' }}
-            >
-              <div className="relative">
-                <div className="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow flex items-center justify-center text-white">
-                  <Navigation className="w-3 h-3 rotate-45" />
-                </div>
-                <div className="absolute top-7 -left-3 bg-[#17231D] text-white text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap shadow-xs">
-                  {language === 'hi' ? 'आप यहां हैं' : 'You (GPS)'}
-                </div>
-              </div>
-            </div>
-
-            {/* Recycler Pins */}
-            {sortedRecyclers.map((rec, idx) => {
-              const positions = [
-                { left: '68%', top: '35%' },
-                { left: '46%', top: '28%' },
-                { left: '22%', top: '48%' },
-                { left: '78%', top: '65%' },
-              ];
-              const pos = positions[idx % positions.length];
-              const isSelected = rec.id === (selectedRecyclerId || sortedRecyclers[0]?.id);
-
-              return (
-                <button
-                  key={rec.id}
-                  id={`map-pin-${rec.id}`}
-                  onClick={() => {
-                    playChime('click');
-                    setSelectedRecyclerId(rec.id);
-                  }}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 z-20 transition-all cursor-pointer ${
-                    isSelected ? 'scale-110 z-30' : 'scale-95 hover:scale-105'
-                  }`}
-                  style={{ left: pos.left, top: pos.top }}
-                >
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-0.5 shadow-sm ${
-                        isSelected
-                          ? 'bg-[#176B45] text-white border-white ring-2 ring-[#176B45]/30'
-                          : 'bg-white text-[#17231D] border-[#DDE6E0]'
-                      }`}
-                    >
-                      <IndianRupee className="w-3 h-3" />
-                      <span>{rec.totalOffered}</span>
-                    </div>
-
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center border-2 border-white mt-1 shadow-sm ${
-                        isSelected ? 'bg-[#176B45] text-white' : 'bg-[#238B5A] text-white'
-                      }`}
-                    >
-                      <MapPin className="w-4 h-4 fill-current" />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {/* Real Google Maps Component with Firestore Sync */}
+          <GoogleRecyclersMap
+            recyclers={sortedRecyclers}
+            selectedRecyclerId={selectedRecyclerId || sortedRecyclers[0]?.id || null}
+            onSelectRecycler={(rec) => {
+              playChime('click');
+              setSelectedRecyclerId(rec.id);
+            }}
+            collectorLoc={collectorLoc}
+            language={language}
+            height="440px"
+            onAddRecyclersClick={() => {
+              playChime('click');
+              setIsAddModalOpen(true);
+            }}
+          />
 
           {/* Active Recycler Card */}
           {activeRecycler && (
             <div className="bg-white rounded-2xl border-2 border-[#176B45] p-5 sm:p-6 space-y-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-extrabold text-base sm:text-lg text-[#17231D]">
                       {activeRecycler.name}
                     </h3>
-                    <ShieldCheck className="w-5 h-5 text-[#16834A]" />
+                    {activeRecycler.spcbCertified && (
+                      <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>CPCB/SPCB Auth</span>
+                      </span>
+                    )}
+                    {activeRecycler.priceMultiplier > 1 && (
+                      <span className="text-[11px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-black">
+                        +{Math.round((activeRecycler.priceMultiplier - 1) * 100)}% Rate Bonus
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
                     {activeRecycler.address}, {activeRecycler.city}
                   </p>
-                  <p className="text-xs font-mono text-[#176B45] font-semibold mt-1">
-                    {activeRecycler.cpcbRegNumber}
-                  </p>
+                  <div className="flex items-center gap-3 text-xs text-[#66736C] mt-1 flex-wrap">
+                    <span className="font-mono text-[#176B45] font-semibold">
+                      {activeRecycler.cpcbRegNumber}
+                    </span>
+                    {activeRecycler.phone && (
+                      <span className="flex items-center gap-1 font-medium text-[#17231D]">
+                        <Phone className="w-3 h-3 text-[#176B45]" />
+                        {activeRecycler.phone}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="text-right shrink-0">
@@ -358,14 +340,24 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-extrabold text-sm sm:text-base text-[#17231D]">{rec.name}</h4>
                       <ShieldCheck className="w-4 h-4 text-[#16834A]" />
+                      {rec.priceMultiplier > 1 && (
+                        <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-black">
+                          +{Math.round((rec.priceMultiplier - 1) * 100)}% Premium
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-[#66736C] mt-0.5">{rec.address}</p>
-                    <span className="text-[11px] font-mono text-[#176B45] bg-[#EAF6EF] px-2 py-0.5 rounded-md font-semibold mt-1 inline-block">
-                      {rec.cpcbRegNumber}
-                    </span>
+                    <p className="text-xs text-[#66736C] mt-0.5">{rec.address}, {rec.city}</p>
+                    <div className="flex items-center gap-3 text-[11px] mt-1 flex-wrap">
+                      <span className="font-mono text-[#176B45] bg-[#EAF6EF] px-2 py-0.5 rounded-md font-semibold">
+                        {rec.cpcbRegNumber}
+                      </span>
+                      {rec.phone && (
+                        <span className="text-gray-600 font-medium">📞 {rec.phone}</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right">
@@ -447,6 +439,15 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
           </button>
         </div>
       )}
+
+      {/* Add Recyclers Modal */}
+      <AddRecyclerModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onRecyclersAdded={handleRecyclersAdded}
+        collectorLoc={collectorLoc}
+        language={language}
+      />
 
       {/* Side-by-Side Recycler Comparison Modal */}
       {showCompareModal && (

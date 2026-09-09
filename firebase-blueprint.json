@@ -297,6 +297,90 @@
         }
       },
       "required": ["id", "customerName", "customerPhone", "address", "status"]
+    },
+    "waste": {
+      "title": "WasteRecord",
+      "description": "Scanned and collected scrap waste items and collector earnings",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique waste record identifier",
+          "maxLength": 64
+        },
+        "collectorId": {
+          "type": "string",
+          "description": "UID of the scrap collector",
+          "maxLength": 128
+        },
+        "collectorName": {
+          "type": "string",
+          "description": "Full name of the scrap collector",
+          "maxLength": 100
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Scrap category key (e.g. copper, ewaste, cardboard)",
+          "maxLength": 40
+        },
+        "categoryName": {
+          "type": "string",
+          "description": "Display name of the scrap category",
+          "maxLength": 60
+        },
+        "weightKg": {
+          "type": "number",
+          "description": "Verified weight in kilograms"
+        },
+        "ratePerKg": {
+          "type": "number",
+          "description": "CPCB fair market rate per kilogram in INR"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total payout amount / collector earnings in INR"
+        },
+        "fairAdvantageAmount": {
+          "type": "number",
+          "description": "Extra earnings over middleman baseline rates in INR"
+        },
+        "cleanliness": {
+          "type": "string",
+          "description": "Cleanliness condition",
+          "enum": ["clean", "dirty"]
+        },
+        "structural": {
+          "type": "string",
+          "description": "Structural condition",
+          "enum": ["intact", "damaged"]
+        },
+        "recyclerId": {
+          "type": "string",
+          "description": "Recycling facility ID",
+          "maxLength": 64
+        },
+        "recyclerName": {
+          "type": "string",
+          "description": "Recycling facility name",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Status: scanned, pending_pickup, verified_handover, paid, completed",
+          "enum": ["scanned", "pending_pickup", "verified_handover", "paid", "completed"]
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 40
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Linked transaction receipt identifier",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "collectorId", "categoryId", "weightKg", "totalAmount", "status"]
     }
   },
   "firestore": {
@@ -319,6 +403,10 @@
     "/pickups/{pickupId}": {
       "schema": "pickups",
       "description": "Doorstep pickup appointments"
+    },
+    "/waste/{wasteId}": {
+      "schema": "waste",
+      "description": "Real-time waste collection records and earnings"
     }
   }
 }

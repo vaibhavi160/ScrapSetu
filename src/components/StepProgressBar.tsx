@@ -72,7 +72,11 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({
               <button
                 key={s.step}
                 id={`stepper-dot-${s.step}`}
-                onClick={() => isCompleted && navigate && navigate(s.step)}
+                onClick={() => {
+                  if (isCompleted && typeof navigate === 'function') {
+                    navigate(s.step);
+                  }
+                }}
                 disabled={!isCompleted && !isCurrent}
                 title={`Step ${s.step}: ${s.labelEn}`}
                 className={`transition-all rounded-full ${
