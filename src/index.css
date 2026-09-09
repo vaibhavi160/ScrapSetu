@@ -1,18 +1,23 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {
-    --color-primary: #176B45;
-    --color-secondary: #238B5A;
-    --color-light-green: #EAF6EF;
-    --color-bg: #F7F9F8;
+    --color-primary: #E8433D;
+    --color-primary-hover: #D32F2F;
+    --color-navy: #0F1A3C;
+    --color-navy-card: #0F1A3C;
+    --color-navy-dark: #0A122A;
+    --color-lavender: #EEF1F8;
+    --color-lavender-dark: #E2E8F4;
+    --color-bg: #F8F9FD;
     --color-white: #FFFFFF;
-    --color-text-primary: #17231D;
-    --color-text-secondary: #66736C;
-    --color-border: #DDE6E0;
+    --color-text-primary: #111827;
+    --color-text-secondary: #64748B;
+    --color-border: #E2E8F0;
     --color-success: #16834A;
     --color-warning: #E59A23;
-    --color-error: #D64545;
+    --color-error: #E8433D;
   }
 
   body {

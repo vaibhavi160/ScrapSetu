@@ -402,20 +402,20 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
       />
 
       {/* Header & Speech helper */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#DDE6E0]">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2.5">
-            <Camera className="w-6 h-6 text-[#176B45]" />
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F1A3C] flex items-center gap-2.5">
+            <Camera className="w-6 h-6 text-[#E8433D]" />
             <span>{t.capturePhoto}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">{t.photoSubtitle}</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{t.photoSubtitle}</p>
         </div>
         <VoiceButton textToSpeak={cameraGuideText} language={language} label={t.listenAudio} size="md" />
       </div>
 
       {/* Main Viewfinder / Capture Box */}
       {!capturedImage ? (
-        <div className="bg-white rounded-2xl border border-[#DDE6E0] p-5 sm:p-6 text-center overflow-hidden shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 text-center overflow-hidden shadow-xs">
           {cameraActive ? (
             <div className="space-y-4">
               {/* Video viewfinder container */}
@@ -440,7 +440,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                 {/* Loading indicator before stream plays */}
                 {!isVideoPlaying && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white gap-2">
-                    <RefreshCw className="w-6 h-6 animate-spin text-[#176B45]" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-[#E8433D]" />
                     <span className="text-xs font-medium">{t.cameraStarting || 'Starting camera...'}</span>
                   </div>
                 )}
@@ -472,8 +472,8 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                   disabled={!isVideoPlaying}
                   className={`flex-1 py-3 px-6 rounded-xl font-bold flex items-center justify-center gap-2 text-sm transition-all shadow-xs ${
                     isVideoPlaying
-                      ? 'bg-[#176B45] hover:bg-[#238B5A] text-white cursor-pointer'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'bg-[#E8433D] hover:bg-[#D32F2F] text-white cursor-pointer shadow-md shadow-[#E8433D]/25'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   <Camera className="w-5 h-5" />
@@ -483,7 +483,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                 <button
                   id="camera-flip-text-btn"
                   onClick={handleFlipCamera}
-                  className="py-3 px-4 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="py-3 px-4 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer transition-colors"
                   title="Flip Camera"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -493,7 +493,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                 <button
                   id="camera-stop-btn"
                   onClick={stopCamera}
-                  className="py-3 px-4 bg-[#F7F9F8] hover:bg-gray-100 text-[#66736C] hover:text-[#17231D] border border-[#DDE6E0] rounded-xl font-medium text-xs sm:text-sm cursor-pointer transition-colors"
+                  className="py-3 px-4 bg-[#EEF1F8] hover:bg-slate-200 text-slate-600 hover:text-[#0F1A3C] border border-slate-200 rounded-xl font-medium text-xs sm:text-sm cursor-pointer transition-colors"
                 >
                   {language === 'hi' ? 'बंद करें' : 'Close'}
                 </button>
@@ -502,15 +502,15 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
           ) : (
             /* Idle / Launch Mode */
             <div className="py-6 space-y-5">
-              <div className="w-16 h-16 bg-[#EAF6EF] text-[#176B45] rounded-2xl flex items-center justify-center mx-auto border border-[#176B45]/20">
-                <Camera className="w-8 h-8" />
+              <div className="w-16 h-16 bg-[#EEF1F8] text-[#0F1A3C] rounded-2xl flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
+                <Camera className="w-8 h-8 text-[#E8433D]" />
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-[#17231D]">
+                <h3 className="text-lg font-bold text-[#0F1A3C]">
                   {language === 'hi' ? 'कबाड़ का फोटो लें' : language === 'mr' ? 'कचऱ्याचा फोटो काढा' : 'Capture Scrap Item'}
                 </h3>
-                <p className="text-sm text-[#66736C] max-w-sm mx-auto mt-1">
+                <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">
                   {language === 'hi'
                     ? 'लाइव कैमरा शुरू करें, फ़ोन के कैमरे से फोटो लें, या गैलरी से चुनें।'
                     : 'Start the live camera, snap using your phone camera, or select a file.'}
@@ -519,12 +519,12 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
 
               {/* Camera Error / Permission Notice */}
               {cameraError && (
-                <div className="p-4 bg-[#FEF6E9] border border-[#E59A23]/40 rounded-2xl text-left space-y-2.5 max-w-md mx-auto">
-                  <div className="flex items-center gap-2 text-[#17231D] font-bold text-xs">
-                    <AlertTriangle className="w-4 h-4 text-[#E59A23] shrink-0" />
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-left space-y-2.5 max-w-md mx-auto">
+                  <div className="flex items-center gap-2 text-[#0F1A3C] font-bold text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>{cameraError.title}</span>
                   </div>
-                  <p className="text-xs text-[#66736C] leading-relaxed">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     {cameraError.details}
                   </p>
                   
@@ -532,16 +532,16 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                   <div className="pt-1 flex gap-2">
                     <button
                       onClick={() => nativeCameraInputRef.current?.click()}
-                      className="flex-1 py-2 px-3 bg-[#176B45] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[#238B5A] transition-colors"
+                      className="flex-1 py-2 px-3 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                     >
                       <Smartphone className="w-4 h-4" />
                       <span>{language === 'hi' ? 'फ़ोन कैमरा' : 'Phone Camera'}</span>
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 py-2 px-3 bg-white border border-[#DDE6E0] text-[#17231D] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[#F7F9F8] transition-colors"
+                      className="flex-1 py-2 px-3 bg-white border border-slate-200 text-[#0F1A3C] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-50 transition-colors"
                     >
-                      <Upload className="w-4 h-4 text-[#66736C]" />
+                      <Upload className="w-4 h-4 text-slate-500" />
                       <span>{t.uploadPhoto}</span>
                     </button>
                   </div>
@@ -555,16 +555,16 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                   id="btn-open-live-cam"
                   onClick={() => startCamera('environment')}
                   disabled={isStartingCamera}
-                  className="w-full py-3.5 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs hover:shadow-md"
+                  className="w-full py-3.5 px-5 bg-[#0F1A3C] hover:bg-[#1A2850] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md shadow-[#0F1A3C]/20"
                 >
                   {isStartingCamera ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#E8433D]" />
                       <span>{t.cameraStarting || 'Starting camera...'}</span>
                     </>
                   ) : (
                     <>
-                      <Video className="w-4 h-4" />
+                      <Video className="w-4 h-4 text-[#E8433D]" />
                       <span>{t.openCamera || 'Start Live Camera'}</span>
                     </>
                   )}
@@ -574,7 +574,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                 <button
                   id="btn-trigger-phone-cam"
                   onClick={() => nativeCameraInputRef.current?.click()}
-                  className="w-full py-3 px-5 bg-[#EAF6EF] hover:bg-[#d8eedf] text-[#176B45] border border-[#176B45]/30 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                  className="w-full py-3 px-5 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
                 >
                   <Smartphone className="w-4 h-4" />
                   <span>{t.phoneCamera || 'Take Photo with Phone Camera'}</span>
@@ -584,16 +584,16 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
                 <button
                   id="btn-trigger-upload"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-2.5 px-4 bg-white border border-[#DDE6E0] text-[#17231D] hover:bg-[#F7F9F8] rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                  className="w-full py-2.5 px-4 bg-white border border-slate-200 text-[#0F1A3C] hover:bg-[#EEF1F8] rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Upload className="w-4 h-4 text-[#66736C]" />
+                  <Upload className="w-4 h-4 text-slate-500" />
                   <span>{t.uploadPhoto}</span>
                 </button>
               </div>
 
               {/* Browser Permission Helper Note */}
-              <div className="pt-2 border-t border-[#DDE6E0] flex items-center justify-center gap-1.5 text-xs text-[#66736C]">
-                <HelpCircle className="w-4 h-4 text-[#66736C]" />
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                <HelpCircle className="w-4 h-4 text-slate-400" />
                 <span>
                   {language === 'hi'
                     ? 'ब्राउज़र में कैमरा ब्लॉक होने पर "फ़ोन कैमरा" चुनें'
@@ -605,7 +605,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
         </div>
       ) : (
         /* Image Quality Assessment & Review View */
-        <div className="bg-white rounded-2xl border border-[#DDE6E0] p-5 sm:p-6 space-y-5 shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-5 shadow-xs">
           <div className="relative rounded-xl overflow-hidden aspect-4/3 max-h-[340px] bg-black mx-auto shadow-inner">
             <img
               src={capturedImage}
@@ -618,24 +618,24 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
           </div>
 
           {/* Quality Analyzer Output Card */}
-          <div className="border border-[#DDE6E0] rounded-xl p-4 space-y-3 bg-[#F7F9F8]">
+          <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-[#F8F9FD]">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-[#17231D]">
-                <Sparkles className="w-4 h-4 text-[#176B45]" />
+              <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-[#0F1A3C]">
+                <Sparkles className="w-4 h-4 text-[#E8433D]" />
                 <span>{t.qualityCheck}</span>
               </div>
               {analyzing ? (
-                <span className="text-xs text-[#176B45] font-semibold flex items-center gap-1.5">
+                <span className="text-xs text-[#E8433D] font-semibold flex items-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   <span>Analyzing image clarity...</span>
                 </span>
               ) : qualityResult?.isAcceptable ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EAF6EF] text-[#16834A] border border-[#16834A]/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{t.qualitySharp}</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FEF6E9] text-[#E59A23] border border-[#E59A23]/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>{language === 'hi' ? 'कम रोशनी या धुंधला' : 'Quality Warning'}</span>
                 </span>
@@ -645,29 +645,29 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
             {/* Quality Metrics Grid */}
             {qualityResult && (
               <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                <div className="p-3 bg-white rounded-xl border border-[#DDE6E0]">
-                  <span className="text-[#66736C] text-[11px] block">
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="text-slate-500 text-[11px] block">
                     {language === 'hi' ? 'तीखापन (Sharpness)' : 'Sharpness'}
                   </span>
-                  <span className={`font-bold text-base tabular-nums mt-0.5 block ${qualityResult.blurScore >= 45 ? 'text-[#16834A]' : 'text-[#D64545]'}`}>
+                  <span className={`font-bold text-base tabular-nums mt-0.5 block ${qualityResult.blurScore >= 45 ? 'text-emerald-700' : 'text-[#E8433D]'}`}>
                     {qualityResult.blurScore}%
                   </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-[#DDE6E0]">
-                  <span className="text-[#66736C] text-[11px] block">
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="text-slate-500 text-[11px] block">
                     {language === 'hi' ? 'उजाला (Lighting)' : 'Lighting'}
                   </span>
-                  <span className={`font-bold text-base tabular-nums mt-0.5 block ${qualityResult.lightingScore >= 40 ? 'text-[#16834A]' : 'text-[#E59A23]'}`}>
+                  <span className={`font-bold text-base tabular-nums mt-0.5 block ${qualityResult.lightingScore >= 40 ? 'text-emerald-700' : 'text-amber-600'}`}>
                     {qualityResult.lightingScore}%
                   </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-[#DDE6E0]">
-                  <span className="text-[#66736C] text-[11px] block">
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="text-slate-500 text-[11px] block">
                     {language === 'hi' ? 'पहचान (Object)' : 'Target'}
                   </span>
-                  <span className={`font-bold text-base mt-0.5 block ${qualityResult.objectDetected ? 'text-[#16834A]' : 'text-[#D64545]'}`}>
+                  <span className={`font-bold text-base mt-0.5 block ${qualityResult.objectDetected ? 'text-emerald-700' : 'text-[#E8433D]'}`}>
                     {qualityResult.objectDetected ? 'Detected' : 'Unclear'}
                   </span>
                 </div>
@@ -676,12 +676,12 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
 
             {/* Quality Issues Feedback & Tips */}
             {qualityResult && qualityResult.issues.length > 0 && (
-              <div className="p-3 bg-[#FEF6E9] border border-[#E59A23]/40 rounded-xl text-xs text-[#17231D] space-y-1">
-                <p className="font-bold flex items-center gap-1.5 text-xs text-[#E59A23]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#E59A23]" />
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-[#0F1A3C] space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-xs text-amber-700">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                   <span>{language === 'hi' ? 'गुणवत्ता सुझाव:' : 'Photo Quality Suggestion:'}</span>
                 </p>
-                <ul className="list-disc pl-5 text-xs text-[#66736C] space-y-0.5">
+                <ul className="list-disc pl-5 text-xs text-slate-600 space-y-0.5">
                   {qualityResult.issues.map((issue, idx) => (
                     <li key={idx}>{issue}</li>
                   ))}
@@ -695,7 +695,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
             <button
               id="photo-retake-btn"
               onClick={handleRetake}
-              className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
               <span>{t.retake}</span>
@@ -705,7 +705,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
               <button
                 id="photo-proceed-btn"
                 onClick={handleProceed}
-                className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E8433D]/25 transition-colors"
               >
                 <span>{language === 'hi' ? 'एआई वर्गीकरण शुरू करें' : 'Analyze Material'}</span>
                 <ChevronRight className="w-4 h-4" />
@@ -714,7 +714,7 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
               <button
                 id="photo-override-btn"
                 onClick={handleManualOverrideProceed}
-                className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#E59A23] hover:bg-[#C98218] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                className="w-full sm:w-auto sm:flex-1 py-3 px-5 bg-[#0F1A3C] hover:bg-[#1A2850] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
               >
                 <Check className="w-4 h-4" />
                 <span>{language === 'hi' ? 'इसी फोटो के साथ आगे बढ़ें' : 'Proceed Anyway'}</span>
@@ -727,11 +727,11 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
       {/* Preset Realistic Scrap Items Carousel (One-tap instant test) */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-[#17231D] flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-[#176B45]" />
+          <span className="text-sm font-bold text-[#0F1A3C] flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-[#E8433D]" />
             <span>{language === 'hi' ? 'सैंपल ई-कचरा टेस्ट करें' : 'Sample E-Waste Items (One-Tap Test)'}</span>
           </span>
-          <span className="text-xs text-[#66736C]">{language === 'hi' ? 'टैप करके चुनें' : 'Tap to test'}</span>
+          <span className="text-xs text-slate-500">{language === 'hi' ? 'टैप करके चुनें' : 'Tap to test'}</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -740,21 +740,21 @@ export const Step2CameraScreen: React.FC<Step2CameraScreenProps> = ({
               key={idx}
               id={`preset-btn-${idx}`}
               onClick={() => handleSelectPreset(preset, idx)}
-              className="p-2.5 bg-white rounded-xl border border-[#DDE6E0] hover:border-[#176B45] text-left transition-all group cursor-pointer shadow-xs hover:shadow-sm"
+              className="p-2.5 bg-white rounded-xl border border-slate-200 hover:border-[#E8433D] text-left transition-all group cursor-pointer shadow-xs hover:shadow-sm"
             >
-              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 mb-2">
+              <div className="aspect-video rounded-lg overflow-hidden bg-slate-100 mb-2">
                 <img
                   src={preset.url}
                   alt={preset.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 />
               </div>
-              <div className="text-xs font-bold text-[#17231D] truncate">
+              <div className="text-xs font-bold text-[#0F1A3C] truncate">
                 {preset.name}
               </div>
-              <div className="text-[11px] text-[#66736C] flex items-center justify-between mt-0.5">
+              <div className="text-[11px] text-slate-500 flex items-center justify-between mt-0.5">
                 <span className="truncate">{preset.category}</span>
-                <span className="font-semibold text-[#176B45] shrink-0 ml-1">
+                <span className="font-semibold text-[#E8433D] shrink-0 ml-1">
                   {Math.round(preset.confidence * 100)}%
                 </span>
               </div>

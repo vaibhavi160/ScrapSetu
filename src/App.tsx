@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Language, FlowStep, WasteCategory, AppSettings, 
+  Language, FlowStep, WasteCategory, WasteCategoryInfo, AppSettings, 
   Transaction, Recycler, PickupSchedule, ClassificationResult, PhotoQualityAssessment,
-  UserProfile, WasteRecord
+  UserProfile, WasteRecord, SelectedRole
 } from './types';
 import { TRANSLATIONS } from './utils/translations';
 import { 
   getStoredSettings, saveStoredSettings, getStoredTransactions, 
-  saveStoredTransaction, getPendingSyncItems, queueItemForSync, syncPendingItems 
+  saveStoredTransaction, getPendingSyncItems, queueItemForSync, syncPendingItems,
+  normalizeTransaction
 } from './utils/storage';
 import {
   getStoredUser,
@@ -45,8 +46,12 @@ import { AuthModal } from './components/AuthModal';
 import { DatabaseViewerModal } from './components/DatabaseViewerModal';
 import { SplashScreen } from './components/SplashScreen';
 import { BottomNav } from './components/BottomNav';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { triggerHaptic } from './hooks/usePWAInstall';
 
 // Step Screens
+import { RoleSelectionScreen } from './screens/RoleSelectionScreen';
+import { RecyclerPortal } from './screens/recycler/RecyclerPortal';
 import { LoginScreen } from './screens/LoginScreen';
 import { Step1HomeScreen } from './screens/Step1HomeScreen';
 import { Step2CameraScreen } from './screens/Step2CameraScreen';
@@ -64,6 +69,12 @@ export default function App() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [settings, setSettings] = useState<AppSettings>(getStoredSettings());
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(getStoredUser());
+  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>(() => {
+    const user = getStoredUser();
+    if (user?.role === 'recycler') return 'recycler';
+    if (user?.role === 'collector') return 'collector';
+    return null;
+  });
   const [guestAccess, setGuestAccess] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
@@ -71,6 +82,7 @@ export default function App() {
   const [activeModal, setActiveModal] = useState<'safety' | 'impact' | 'settings' | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>(getStoredTransactions());
   const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([]);
+  const [categories, setCategories] = useState<WasteCategoryInfo[]>(WASTE_CATEGORIES);
   const [recyclers, setRecyclers] = useState<Recycler[]>(MOCK_RECYCLERS);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(getPendingSyncItems().length);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -120,7 +132,10 @@ export default function App() {
   useEffect(() => {
     // 1. Real-time Categories listener (public read)
     const unsubCats = subscribeCategories((cats) => {
-      console.log(`Synced ${cats.length} scrap categories from Firebase Firestore`);
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+        console.log(`Synced ${cats.length} scrap categories from Firebase Firestore`);
+      }
     });
 
     // 2. Real-time Recyclers listener (public read)
@@ -193,8 +208,8 @@ export default function App() {
       if (fireTxns && fireTxns.length > 0) {
         setTransactions((prev) => {
           const map = new Map<string, Transaction>();
-          prev.forEach((t) => map.set(t.id, t));
-          fireTxns.forEach((t) => map.set(t.id, t));
+          prev.forEach((t) => map.set(t.id, normalizeTransaction(t)));
+          fireTxns.forEach((t) => map.set(t.id, normalizeTransaction(t)));
           return Array.from(map.values());
         });
       }
@@ -205,6 +220,36 @@ export default function App() {
       unsubTxns();
     };
   }, [currentUser?.id]);
+
+  // Android hardware & gesture back button navigation handler
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeModal !== null) {
+        setActiveModal(null);
+        triggerHaptic('light');
+        return;
+      }
+      if (isDbModalOpen) {
+        setIsDbModalOpen(false);
+        triggerHaptic('light');
+        return;
+      }
+      if (isAuthModalOpen) {
+        setIsAuthModalOpen(false);
+        triggerHaptic('light');
+        return;
+      }
+      if (currentStep > 1) {
+        setCurrentStep((prev) => Math.max(1, prev - 1));
+        triggerHaptic('light');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [activeModal, isDbModalOpen, isAuthModalOpen, currentStep]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -422,8 +467,8 @@ export default function App() {
     });
     setWasteRecords((prev) =>
       prev.map((w) =>
-        w.categoryName === updatedTxn.payload.classification.confirmedCategory
-          ? { ...w, status: 'paid' as const, transactionId: updatedTxn.id, recyclerName: updatedTxn.selectedRecycler.name }
+        w.categoryName === (updatedTxn.payload?.classification?.confirmedCategory || (updatedTxn as any).categoryName)
+          ? { ...w, status: 'paid' as const, transactionId: updatedTxn.id, recyclerName: updatedTxn.selectedRecycler?.name || '' }
           : w
       )
     );
@@ -434,6 +479,8 @@ export default function App() {
     setCurrentUser(user);
     setGuestAccess(false);
     saveStoredUser(user);
+    const userRole: SelectedRole = user.role === 'recycler' ? 'recycler' : 'collector';
+    setSelectedRole(userRole);
     handleUpdateSettings({
       collectorName: user.name,
       collectorPhone: user.phone,
@@ -446,8 +493,26 @@ export default function App() {
     logoutUser();
     signOutFromFirebase().catch(() => {});
     setCurrentUser(null);
+    setSelectedRole(null);
     setGuestAccess(false);
     showToast('Signed out successfully.');
+  };
+
+  const handleSwitchRole = (newRole: SelectedRole) => {
+    setSelectedRole(newRole);
+    if (currentUser) {
+      const updatedUser: UserProfile = {
+        ...currentUser,
+        role: newRole,
+      };
+      setCurrentUser(updatedUser);
+      saveStoredUser(updatedUser);
+    }
+    showToast(
+      newRole === 'recycler'
+        ? 'Switched to Recycler Portal'
+        : 'Switched to Collector Portal'
+    );
   };
 
   const handleOpenAuth = () => {
@@ -475,13 +540,28 @@ export default function App() {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  // Show Log In page firstly if someone opens the app and is not logged in
+  // 2. "Choose your role" screen (Collector vs Recycler)
+  if (!currentUser && !guestAccess && !selectedRole) {
+    return (
+      <RoleSelectionScreen
+        language={settings?.language || 'hi'}
+        onSelectRole={(role) => {
+          setSelectedRole(role);
+        }}
+        onLanguageChange={(lang) => handleUpdateSettings({ language: lang })}
+      />
+    );
+  }
+
+  // 3. Login / Register screen tagged with the chosen role
   if (!currentUser && !guestAccess) {
     return (
       <div className="min-h-screen bg-[#F7F9F8] text-[#17231D] flex flex-col">
         <LoginScreen
           language={settings?.language || 'hi'}
           onLanguageChange={(lang) => handleUpdateSettings({ language: lang })}
+          selectedRole={selectedRole || 'collector'}
+          onChangeRole={() => setSelectedRole(null)}
           onLoginSuccess={(user) => {
             handleAuthSuccess(user);
           }}
@@ -500,6 +580,100 @@ export default function App() {
             <span>{toastMessage}</span>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // Determine active portal: 'recycler' vs 'collector'
+  const activeRole: SelectedRole =
+    currentUser?.role === 'recycler' || selectedRole === 'recycler' ? 'recycler' : 'collector';
+
+  // 4. Recycler Portal Flow
+  if (activeRole === 'recycler') {
+    return (
+      <div className="min-h-screen bg-[#F7F9F8] text-[#17231D] flex flex-col">
+        {/* Global Header */}
+        <Header
+          settings={settings}
+          language={settings?.language || 'hi'}
+          onLanguageChange={(lang) => handleUpdateSettings({ language: lang })}
+          onUpdateSettings={handleUpdateSettings}
+          isOffline={!!settings?.offlineSimulation}
+          pendingSyncCount={pendingSyncCount}
+          onTriggerSync={handleTriggerSync}
+          onOpenSettings={() => setActiveModal('settings')}
+          onOpenSafety={() => setActiveModal('safety')}
+          onOpenImpact={() => setActiveModal('impact')}
+          currentStep={currentStep}
+          onResetToHome={handleResetToHome}
+          currentUser={currentUser}
+          onOpenAuth={handleOpenAuth}
+          onOpenDatabase={() => setIsDbModalOpen(true)}
+          onLogout={handleLogout}
+          currentRole="recycler"
+          onSwitchRole={handleSwitchRole}
+        />
+
+        <RecyclerPortal
+          transactions={transactions}
+          onUpdateTransactions={(updated) => {
+            setTransactions(updated);
+          }}
+          currentUser={currentUser}
+          language={settings?.language || 'hi'}
+          onSwitchToCollector={() => handleSwitchRole('collector')}
+          onLogout={handleLogout}
+          categories={categories}
+          onCategoriesUpdated={(cats) => setCategories(cats)}
+          recyclers={recyclers}
+          onRecyclersUpdated={(recs) => setRecyclers(recs)}
+        />
+
+        {/* Database viewer modal & Toast */}
+        {isDbModalOpen && (
+          <DatabaseViewerModal
+            isOpen={isDbModalOpen}
+            onClose={() => setIsDbModalOpen(false)}
+            transactions={transactions}
+            wasteRecords={wasteRecords}
+            categories={categories}
+            recyclers={recyclers}
+            currentUser={currentUser}
+            language={settings?.language || 'hi'}
+          />
+        )}
+
+        {isAuthModalOpen && (
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            currentUser={currentUser}
+            language={settings?.language || 'hi'}
+            onLoginSuccess={handleAuthSuccess}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {activeModal === 'settings' && (
+          <SettingsModal
+            isOpen={activeModal === 'settings'}
+            onClose={() => setActiveModal(null)}
+            settings={settings}
+            onUpdateSettings={handleUpdateSettings}
+            onTriggerSync={handleTriggerSync}
+            pendingSyncCount={pendingSyncCount}
+          />
+        )}
+
+        {toastMessage && (
+          <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-[#17231D] text-white px-5 py-3 rounded-xl text-xs sm:text-sm font-medium shadow-xl border border-[#DDE6E0]/20 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2">
+            <span className="w-2 h-2 rounded-full bg-[#16834A] shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {/* Android PWA Offline Connectivity Indicator */}
+        <OfflineIndicator />
       </div>
     );
   }
@@ -551,6 +725,8 @@ export default function App() {
         onOpenAuth={handleOpenAuth}
         onOpenDatabase={() => setIsDbModalOpen(true)}
         onLogout={handleLogout}
+        currentRole="collector"
+        onSwitchRole={handleSwitchRole}
       />
 
       {/* 10-Step Progress Tracker Bar */}
@@ -573,7 +749,7 @@ export default function App() {
       />
 
       {/* Responsive Main Content Wrapper */}
-      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6 pb-24">
+      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28">
         <main className="flex-1">
           {/* STEP 1: Home / Dashboard */}
           {currentStep === 1 && (
@@ -601,6 +777,8 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={handleOpenAuth}
               onOpenDatabase={() => setIsDbModalOpen(true)}
+              categories={categories}
+              recyclers={recyclers}
             />
           )}
 
@@ -626,6 +804,7 @@ export default function App() {
               onConfirmClassification={handleClassificationConfirmed}
               onBack={() => setCurrentStep(2)}
               onRetakePhoto={() => setCurrentStep(2)}
+              categories={categories}
             />
           )}
 
@@ -650,6 +829,7 @@ export default function App() {
               condition={condition}
               onPriceConfirmed={handlePriceConfirmed}
               onBack={() => setCurrentStep(4)}
+              categories={categories}
             />
           )}
 
@@ -790,6 +970,9 @@ export default function App() {
         }}
         language={settings.language}
       />
+
+      {/* Android PWA Offline Connectivity Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

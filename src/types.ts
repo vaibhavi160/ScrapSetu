@@ -22,19 +22,22 @@ export type WasteCategory =
   | 'Organic'
   | 'Textile'
   | 'Rubber'
-  | 'Mixed/Other';
+  | 'Mixed/Other'
+  | (string & {});
 
 export interface WasteCategoryInfo {
-  id: WasteCategory;
+  id: string;
   nameEn: string;
   nameHi: string;
-  nameMr: string;
-  icon: string;
-  subtypes: string[];
+  nameMr?: string;
+  icon?: string;
+  subtypes?: string[];
   basePricePerKg: number;
   marketRatePerKg: number;
-  hazardLevel: 'low' | 'medium' | 'high';
-  color: string;
+  hazardLevel?: 'low' | 'medium' | 'high';
+  color?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface ImageQualityAssessment {
@@ -115,7 +118,7 @@ export interface Recycler {
   lng: number;
   rating: number;
   reviewCount: number;
-  acceptedCategories: WasteCategory[];
+  acceptedCategories: (WasteCategory | string)[];
   priceMultiplier: number; // 0.95 to 1.15
   pickupAvailable: boolean;
   minPickupWeightKg: number;
@@ -124,6 +127,8 @@ export interface Recycler {
   verifiedBadge: boolean;
   distanceKm?: number;
   drivingEtaMins?: number;
+  customRates?: Record<string, number>;
+  ownerUid?: string;
 }
 
 export interface PickupSchedule {
@@ -162,7 +167,7 @@ export interface LedgerBlock {
 export interface Transaction {
   id: string; // e.g. EPR-2026-MUM-4821
   timestamp: number;
-  status: 'draft' | 'pending_pickup' | 'verified_handover' | 'paid' | 'completed';
+  status: 'draft' | 'pending_pickup' | 'accepted' | 'rejected' | 'verified_handover' | 'paid' | 'completed';
   payload: WasteItemPayload;
   selectedRecycler: Recycler;
   pickup: PickupSchedule;
@@ -176,6 +181,15 @@ export interface Transaction {
     receiptQr: string;
   };
   syncStatus: 'synced' | 'pending_sync';
+  counterOffer?: {
+    originalPrice: number;
+    counterPrice: number;
+    counterPricePerKg: number;
+    note?: string;
+    timestamp: number;
+    status: 'pending' | 'accepted' | 'declined';
+  };
+  recyclerNotes?: string;
 }
 
 export interface SafetyTip {
@@ -208,6 +222,7 @@ export interface AppSettings {
 }
 
 export type UserRole = 'collector' | 'seller' | 'recycler' | 'admin';
+export type SelectedRole = 'collector' | 'recycler';
 
 export interface UserProfile {
   id: string;

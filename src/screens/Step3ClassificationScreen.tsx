@@ -5,7 +5,7 @@ import {
   Layers, AlertTriangle, Scale, Eye, Cpu, Zap
 } from 'lucide-react';
 import { 
-  Language, WasteCategory, ClassificationResult, ImageQualityAssessment 
+  Language, WasteCategory, ClassificationResult, ImageQualityAssessment, WasteCategoryInfo
 } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 import { WASTE_CATEGORIES } from '../data/mockData';
@@ -23,6 +23,7 @@ interface Step3ClassificationScreenProps {
   onConfirmClassification?: (result: ClassificationResult) => void;
   onBack?: () => void;
   onRetakePhoto?: () => void;
+  categories?: WasteCategoryInfo[];
 }
 
 export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps> = ({
@@ -35,8 +36,10 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
   onConfirmClassification,
   onBack,
   onRetakePhoto,
+  categories = WASTE_CATEGORIES,
 }) => {
   const t = TRANSLATIONS[language];
+  const allCats = categories && categories.length > 0 ? categories : WASTE_CATEGORIES;
   const confirmCallback = onClassificationConfirmed || onConfirmClassification;
   const backCallback = onBack || onRetakePhoto;
 
@@ -246,13 +249,13 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header with voice */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#DDE6E0]">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2.5">
-            <Sparkles className="w-6 h-6 text-[#176B45]" />
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F1A3C] flex items-center gap-2.5">
+            <Sparkles className="w-6 h-6 text-[#E8433D]" />
             <span>{t.aiClassification}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {language === 'hi'
               ? 'Google Gemini Vision द्वारा वास्तविक ई-कचरा व धातु वर्गीकरण'
               : 'Google Gemini Vision AI Material & CPCB Stream Classification'}
@@ -265,45 +268,45 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
       {/* Loading Radar Scanner State */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-[#DDE6E0] p-8 sm:p-12 text-center space-y-6 shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center space-y-6 shadow-xs">
           <div className="relative w-28 h-28 mx-auto">
             {/* Pulsing radar ripples */}
-            <div className="absolute inset-0 rounded-full bg-[#176B45]/15 animate-ping" />
-            <div className="absolute inset-2 rounded-full bg-[#176B45]/25 animate-pulse" />
-            <div className="relative w-full h-full rounded-full bg-[#EAF6EF] border-2 border-[#176B45] flex items-center justify-center text-[#176B45] shadow-md">
-              <Sparkles className="w-12 h-12 animate-spin text-[#176B45]" style={{ animationDuration: '3s' }} />
+            <div className="absolute inset-0 rounded-full bg-[#0F1A3C]/10 animate-ping" />
+            <div className="absolute inset-2 rounded-full bg-[#0F1A3C]/20 animate-pulse" />
+            <div className="relative w-full h-full rounded-full bg-[#0F1A3C] border-2 border-[#0F1A3C] flex items-center justify-center text-white shadow-md">
+              <Sparkles className="w-12 h-12 animate-spin text-[#E8433D]" style={{ animationDuration: '3s' }} />
             </div>
           </div>
 
           <div className="space-y-2 max-w-md mx-auto">
-            <h3 className="text-base sm:text-lg font-extrabold text-[#17231D]">
+            <h3 className="text-base sm:text-lg font-black text-[#0F1A3C]">
               {scanStepMessage}
             </h3>
-            <p className="text-xs text-[#66736C]">
+            <p className="text-xs text-slate-500">
               {language === 'hi'
                 ? 'मॉडल सामग्री संरचना, धातु की शुद्धता और जोखिम स्तर की जांच कर रहा है...'
                 : 'Inspecting material density, metallic composition, and toxic elements under CPCB rules...'}
             </p>
           </div>
 
-          <div className="w-48 h-1.5 bg-[#F7F9F8] border border-[#DDE6E0] rounded-full mx-auto overflow-hidden">
-            <div className="h-full bg-[#176B45] rounded-full animate-[shimmer_1.5s_infinite] w-2/3" />
+          <div className="w-48 h-1.5 bg-[#EEF1F8] border border-slate-200 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-[#E8433D] rounded-full animate-[shimmer_1.5s_infinite] w-2/3" />
           </div>
         </div>
       ) : (
         /* Photo & Prediction Card */
-        <div className="bg-white rounded-2xl border border-[#DDE6E0] p-5 sm:p-6 space-y-6 shadow-xs">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-6 shadow-xs">
           {/* Main Visual & Detection Banner */}
           <div className="flex flex-col sm:flex-row items-start gap-5">
             {/* Scrap photo with scan overlay */}
-            <div className="relative w-full sm:w-36 h-36 rounded-2xl overflow-hidden bg-black shrink-0 border border-[#DDE6E0] shadow-xs group">
+            <div className="relative w-full sm:w-36 h-36 rounded-2xl overflow-hidden bg-black shrink-0 border border-slate-200 shadow-xs group">
               <img src={photoUrl} alt="Scrap" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px] text-white font-bold">
                 <span className="bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md">
                   {aiModelSource.includes('gemini') ? 'Gemini Vision' : 'ScrapSetu Vision'}
                 </span>
-                <span className="bg-[#176B45]/80 px-1.5 py-0.5 rounded-md">
+                <span className="bg-[#E8433D]/90 px-1.5 py-0.5 rounded-md">
                   {Math.round(confidence * 100)}%
                 </span>
               </div>
@@ -313,11 +316,11 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
             <div className="flex-1 min-w-0 space-y-3 w-full">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#176B45] bg-[#EAF6EF] px-2.5 py-0.5 rounded-md">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#E8433D] bg-[#EEF1F8] px-2.5 py-0.5 rounded-md">
                     {language === 'hi' ? 'पहचाना गया सामान' : 'AI Detected Item'}
                   </span>
-                  <span className="text-[11px] font-semibold text-[#66736C] flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-[#176B45]" />
+                  <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-[#E8433D]" />
                     {aiModelSource === 'gemini-3.8-flash'
                       ? 'Gemini 3.8 Flash'
                       : aiModelSource === 'gemini-3.1-flash-lite'
@@ -328,11 +331,11 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                   </span>
                 </div>
 
-                <h3 className="text-lg sm:text-xl font-extrabold text-[#17231D] mt-1.5 leading-tight">
+                <h3 className="text-lg sm:text-xl font-black text-[#0F1A3C] mt-1.5 leading-tight">
                   {detectedItemName}
                 </h3>
                 {detectedItemNameHi && detectedItemNameHi !== detectedItemName && (
-                  <p className="text-xs sm:text-sm font-semibold text-[#66736C]">
+                  <p className="text-xs sm:text-sm font-semibold text-slate-500">
                     {detectedItemNameHi}
                   </p>
                 )}
@@ -340,7 +343,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
               {/* Official CPCB Category Pill */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold text-[#66736C]">
+                <span className="text-xs font-semibold text-slate-500">
                   {language === 'hi' ? 'सीपीसीबी श्रेणी:' : 'CPCB Category:'}
                 </span>
                 <span
@@ -354,15 +357,15 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
               {/* Confidence Meter */}
               <div className="space-y-1.5 max-w-md pt-1">
                 <div className="flex justify-between text-xs font-bold">
-                  <span className="text-[#66736C]">{t.confidence}:</span>
-                  <span className={confidence >= 0.7 ? 'text-[#16834A]' : 'text-[#E59A23]'}>
+                  <span className="text-slate-500">{t.confidence}:</span>
+                  <span className={confidence >= 0.7 ? 'text-emerald-700' : 'text-amber-600'}>
                     {Math.round(confidence * 100)}% {confidence >= 0.7 ? `(${t.highConfidence})` : `(${t.uncertainAlert})`}
                   </span>
                 </div>
-                <div className="w-full h-2.5 bg-[#F7F9F8] border border-[#DDE6E0] rounded-full overflow-hidden">
+                <div className="w-full h-2.5 bg-[#EEF1F8] border border-slate-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      confidence >= 0.7 ? 'bg-[#176B45]' : 'bg-[#E59A23]'
+                      confidence >= 0.7 ? 'bg-[#E8433D]' : 'bg-amber-500'
                     }`}
                     style={{ width: `${Math.round(confidence * 100)}%` }}
                   />
@@ -374,16 +377,16 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
           {/* Recoverable Materials & Hazards Matrix */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             {/* Recoverable Components */}
-            <div className="p-3.5 bg-[#F7F9F8] rounded-xl border border-[#DDE6E0] space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#17231D]">
-                <Layers className="w-4 h-4 text-[#176B45]" />
+            <div className="p-3.5 bg-[#F8F9FD] rounded-xl border border-slate-200 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F1A3C]">
+                <Layers className="w-4 h-4 text-[#E8433D]" />
                 <span>{language === 'hi' ? 'पुनर्चक्रण योग्य धातु व घटक:' : 'Recoverable Materials & Metals:'}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {materials.map((mat, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 bg-white border border-[#DDE6E0] rounded-lg text-xs font-semibold text-[#17231D] shadow-2xs"
+                    className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-[#0F1A3C] shadow-2xs"
                   >
                     {mat}
                   </span>
@@ -392,22 +395,22 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
             </div>
 
             {/* Hazardous Elements */}
-            <div className="p-3.5 bg-[#FEF6E9] rounded-xl border border-[#E59A23]/30 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#17231D]">
-                <AlertTriangle className="w-4 h-4 text-[#E59A23]" />
+            <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F1A3C]">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
                 <span>{language === 'hi' ? 'संभावित विषैले तत्व / सावधानियां:' : 'Hazardous Substances & Safety:'}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {hazardousElements.map((haz, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 bg-white border border-[#E59A23]/40 rounded-lg text-xs font-semibold text-[#E59A23] shadow-2xs"
+                    className="px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-xs font-semibold text-amber-700 shadow-2xs"
                   >
                     {haz}
                   </span>
                 ))}
               </div>
-              <p className="text-[11px] text-[#66736C] leading-snug">
+              <p className="text-[11px] text-slate-600 leading-snug">
                 {language === 'hi' ? safetyGuidanceHi : safetyGuidanceEn}
               </p>
             </div>
@@ -415,19 +418,19 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
           {/* AI QA Gating: If confidence < 70%, show prominent warning and require manual confirmation */}
           {isUncertain ? (
-            <div className="p-4 sm:p-5 bg-[#FEF6E9] border border-[#E59A23]/50 rounded-2xl space-y-4">
+            <div className="p-4 sm:p-5 bg-amber-50 border border-amber-200 rounded-2xl space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white border border-[#E59A23] text-[#E59A23] flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-white border border-amber-400 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
                   <AlertCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm sm:text-base font-extrabold text-[#17231D]">{t.uncertainAlert}</h4>
-                  <p className="text-xs text-[#66736C] mt-0.5">{t.uncertainDesc}</p>
+                  <h4 className="text-sm sm:text-base font-black text-[#0F1A3C]">{t.uncertainAlert}</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">{t.uncertainDesc}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-extrabold text-[#17231D] block">
+                <label className="text-xs font-black text-[#0F1A3C] block">
                   {t.manualConfirmLabel}
                 </label>
 
@@ -439,15 +442,15 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                       onClick={() => handleSelectCategory(cat.id)}
                       className={`p-2.5 rounded-xl text-left text-xs border transition-all cursor-pointer flex flex-col justify-between ${
                         confirmedCategory === cat.id
-                          ? 'border-[#176B45] bg-[#EAF6EF] text-[#176B45] font-extrabold ring-2 ring-[#176B45]/20 shadow-xs'
-                          : 'border-[#DDE6E0] bg-white text-[#17231D] hover:bg-[#F7F9F8]'
+                          ? 'border-[#E8433D] bg-white text-[#E8433D] font-black ring-2 ring-[#E8433D]/20 shadow-xs'
+                          : 'border-slate-200 bg-white text-[#0F1A3C] hover:bg-[#EEF1F8]'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
                         <span className="truncate">{categoryNameInLang(cat.id).split(' ')[0]}</span>
                       </div>
-                      <span className="text-[11px] text-[#66736C] font-semibold">₹{cat.basePricePerKg}/kg</span>
+                      <span className="text-[11px] text-slate-500 font-semibold">₹{cat.basePricePerKg}/kg</span>
                     </button>
                   ))}
                 </div>
@@ -458,7 +461,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                     id="category-dropdown-trigger"
                     type="button"
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full p-3 bg-white border border-[#E59A23] rounded-xl flex items-center justify-between text-xs sm:text-sm font-bold text-[#17231D] cursor-pointer shadow-xs"
+                    className="w-full p-3 bg-white border border-amber-300 rounded-xl flex items-center justify-between text-xs sm:text-sm font-bold text-[#0F1A3C] cursor-pointer shadow-xs"
                   >
                     <div className="flex items-center gap-2.5">
                       <span
@@ -467,18 +470,18 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                       />
                       <span>{language === 'hi' ? 'सभी 15+ श्रेणियां देखें' : 'View All 15+ Categories'}: {categoryNameInLang(confirmedCategory)}</span>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-[#66736C]" />
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
                   </button>
 
                   {dropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#DDE6E0] rounded-xl shadow-lg z-30 max-h-64 overflow-y-auto p-2 space-y-1">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto p-2 space-y-1">
                       {WASTE_CATEGORIES.map((cat) => (
                         <button
                           key={cat.id}
                           id={`cat-select-${cat.id}`}
                           onClick={() => handleSelectCategory(cat.id)}
-                          className={`w-full p-2.5 rounded-lg text-left text-xs sm:text-sm flex items-center justify-between hover:bg-[#F7F9F8] transition-colors cursor-pointer ${
-                            confirmedCategory === cat.id ? 'bg-[#EAF6EF] text-[#176B45] font-bold' : 'text-[#17231D]'
+                          className={`w-full p-2.5 rounded-lg text-left text-xs sm:text-sm flex items-center justify-between hover:bg-[#EEF1F8] transition-colors cursor-pointer ${
+                            confirmedCategory === cat.id ? 'bg-[#EEF1F8] text-[#E8433D] font-bold' : 'text-[#0F1A3C]'
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
@@ -486,8 +489,8 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                             <span>{categoryNameInLang(cat.id)}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-[#66736C]">₹{cat.basePricePerKg}/kg</span>
-                            {confirmedCategory === cat.id && <Check className="w-4 h-4 text-[#176B45]" />}
+                            <span className="text-xs text-slate-500">₹{cat.basePricePerKg}/kg</span>
+                            {confirmedCategory === cat.id && <Check className="w-4 h-4 text-[#E8433D]" />}
                           </div>
                         </button>
                       ))}
@@ -497,8 +500,8 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
               </div>
 
               {manualConfirmed && (
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-[#176B45] font-bold bg-[#EAF6EF] p-3 rounded-xl border border-[#176B45]/20">
-                  <ShieldCheck className="w-4 h-4 text-[#176B45]" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-emerald-700 font-bold bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>
                     {language === 'hi' ? 'कबाड़ी सत्यापन पूरा हुआ:' : 'Collector QA Verified:'} {categoryNameInLang(confirmedCategory)}
                   </span>
@@ -507,17 +510,17 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
             </div>
           ) : (
             /* High confidence confirmation box with easy override option */
-            <div className="p-4 bg-[#EAF6EF] border border-[#176B45]/20 rounded-2xl space-y-3">
+            <div className="p-4 bg-[#EEF1F8] border border-slate-200 rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-white border border-[#16834A]/30 text-[#16834A] flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-emerald-300 text-emerald-600 flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs sm:text-sm font-bold text-[#176B45] block">
+                    <span className="text-xs sm:text-sm font-bold text-[#0F1A3C] block">
                       {t.confirmedAs}: {categoryNameInLang(confirmedCategory)}
                     </span>
-                    <span className="text-[11px] text-[#66736C]">
+                    <span className="text-[11px] text-slate-500">
                       Base EPR Rate: ₹{currentCategoryInfo.basePricePerKg}/kg
                     </span>
                   </div>
@@ -527,26 +530,26 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                 <button
                   id="btn-override-category"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="px-3 py-1.5 bg-white border border-[#176B45]/30 rounded-lg text-xs text-[#176B45] font-bold hover:bg-[#176B45] hover:text-white transition-all cursor-pointer shadow-2xs"
+                  className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-[#0F1A3C] font-bold hover:bg-[#0F1A3C] hover:text-white transition-all cursor-pointer shadow-2xs"
                 >
                   {language === 'hi' ? 'श्रेणी बदलें?' : 'Change Category?'}
                 </button>
               </div>
 
               {dropdownOpen && (
-                <div className="pt-3 border-t border-[#176B45]/20 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {WASTE_CATEGORIES.map((cat) => (
+                <div className="pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {allCats.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => handleSelectCategory(cat.id)}
                       className={`p-2.5 rounded-xl text-left text-xs border cursor-pointer transition-colors ${
                         confirmedCategory === cat.id
-                          ? 'border-[#176B45] bg-white text-[#176B45] font-bold shadow-xs'
-                          : 'border-[#DDE6E0] bg-white text-[#17231D] hover:bg-[#F7F9F8]'
+                          ? 'border-[#E8433D] bg-white text-[#E8433D] font-bold shadow-xs ring-2 ring-[#E8433D]/20'
+                          : 'border-slate-200 bg-white text-[#0F1A3C] hover:bg-[#EEF1F8]'
                       }`}
                     >
                       <div className="font-bold truncate">{categoryNameInLang(cat.id).split(' ')[0]}</div>
-                      <div className="text-[10px] text-[#66736C]">₹{cat.basePricePerKg}/kg</div>
+                      <div className="text-[10px] text-slate-500">₹{cat.basePricePerKg}/kg</div>
                     </button>
                   ))}
                 </div>
@@ -555,13 +558,13 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
           )}
 
           {/* CPCB Category Guidelines & Accepted Subtypes */}
-          <div className="bg-[#F7F9F8] rounded-xl p-4 text-xs space-y-2 border border-[#DDE6E0]">
-            <div className="flex items-center justify-between text-[#17231D] font-bold">
+          <div className="bg-[#F8F9FD] rounded-xl p-4 text-xs space-y-2 border border-slate-200">
+            <div className="flex items-center justify-between text-[#0F1A3C] font-bold">
               <span className="flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-[#176B45]" />
+                <Info className="w-4 h-4 text-[#E8433D]" />
                 <span>{language === 'hi' ? 'मान्य घटक (CPCB Subtypes):' : 'Acceptable Components:'}</span>
               </span>
-              <span className="text-[#176B45] font-extrabold text-sm">
+              <span className="text-[#0F1A3C] font-black text-sm">
                 Base: ₹{currentCategoryInfo.basePricePerKg}/kg
               </span>
             </div>
@@ -569,7 +572,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
               {currentCategoryInfo.subtypes.map((sub, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 bg-white border border-[#DDE6E0] rounded-lg text-xs text-[#66736C]"
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-600"
                 >
                   {sub}
                 </span>
@@ -582,7 +585,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
             <button
               id="cat-back-btn"
               onClick={backCallback}
-              className="py-3 px-5 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
+              className="py-3 px-5 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
             >
               {t.back}
             </button>
@@ -590,10 +593,10 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
             <button
               id="cat-rescan-btn"
               onClick={runClassification}
-              className="py-3 px-4 bg-white hover:bg-gray-50 text-[#176B45] border border-[#176B45]/30 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors flex items-center gap-1.5"
+              className="py-3 px-4 bg-white hover:bg-slate-50 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors flex items-center gap-1.5"
               title="Re-run AI classification"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4 text-[#E8433D]" />
               <span>{language === 'hi' ? 'पुनः स्कैन' : 'Re-scan'}</span>
             </button>
 
@@ -603,8 +606,8 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
               disabled={isUncertain && !manualConfirmed}
               className={`flex-1 py-3 px-5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs ${
                 isUncertain && !manualConfirmed
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#176B45] hover:bg-[#238B5A] text-white cursor-pointer hover:shadow-md'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-[#E8433D] hover:bg-[#D32F2F] text-white cursor-pointer shadow-md shadow-[#E8433D]/25'
               }`}
             >
               <span>{language === 'hi' ? 'वजन और स्थिति दर्ज करें' : 'Proceed to Weight & Condition'}</span>

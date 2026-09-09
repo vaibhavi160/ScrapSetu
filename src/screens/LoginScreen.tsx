@@ -4,7 +4,7 @@ import {
   ShieldCheck, AlertCircle, CheckCircle, Truck, Home, 
   Building2, Volume2, Database, KeyRound, Sparkles
 } from 'lucide-react';
-import { Language, UserProfile } from '../types';
+import { Language, UserProfile, SelectedRole } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 import { 
   signInWithEmail, 
@@ -36,6 +36,8 @@ interface LoginScreenProps {
   onLanguageChange: (lang: Language) => void;
   onLoginSuccess: (user: UserProfile) => void;
   onContinueAsGuest: () => void;
+  selectedRole?: SelectedRole;
+  onChangeRole?: () => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
@@ -43,6 +45,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLanguageChange,
   onLoginSuccess,
   onContinueAsGuest,
+  selectedRole = 'collector',
+  onChangeRole,
 }) => {
   const t = TRANSLATIONS[language];
 
@@ -58,7 +62,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<'collector' | 'seller' | 'recycler'>('collector');
+  const [regRole, setRegRole] = useState<'collector' | 'seller' | 'recycler'>(
+    selectedRole === 'recycler' ? 'recycler' : 'collector'
+  );
   const [regPhone, setRegPhone] = useState('');
   const [regCity, setRegCity] = useState('Mumbai');
   const [regPincode, setRegPincode] = useState('400017');
@@ -232,31 +238,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#17231D] flex flex-col justify-between py-6 sm:py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#F8F9FD] text-[#0F1A3C] flex flex-col justify-between py-6 sm:py-8 px-4 sm:px-6">
       {/* Top Bar: Circular Back Button / Logo on left, Audio & Lang on right */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between gap-2 mb-4">
         {activeTab !== 'login' ? (
           <button
             type="button"
             onClick={() => switchToLogin()}
-            className="w-10 h-10 rounded-full bg-[#E8F5E9] hover:bg-[#D7EED9] text-[#107C41] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] flex items-center justify-center transition-colors cursor-pointer"
             title="Back to Login"
           >
             <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#E8F5E9] p-1.5 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#0F1A3C] p-1.5 flex items-center justify-center shadow-xs">
               <img
                 src="/logo-icon.png"
                 alt="Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain brightness-0 invert"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/ScrapSetu.png';
                 }}
               />
             </div>
-            <span className="font-extrabold text-[#107C41] text-base tracking-tight">ScrapSetu</span>
+            <span className="font-black text-[#0F1A3C] text-base tracking-tight">ScrapSetu</span>
           </div>
         )}
 
@@ -266,19 +272,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             type="button"
             id="login-audio-btn"
             onClick={handlePlayVoice}
-            className="w-9 h-9 rounded-full bg-[#E8F5E9] hover:bg-[#D7EED9] text-[#107C41] flex items-center justify-center cursor-pointer transition-colors"
+            className="w-9 h-9 rounded-full bg-white hover:bg-[#EEF1F8] text-[#0F1A3C] border border-slate-200 shadow-2xs flex items-center justify-center cursor-pointer transition-colors"
             title="Audio Guidance"
           >
             <Volume2 className="w-4 h-4" />
           </button>
 
           {/* Clean Language Pill */}
-          <div className="inline-flex items-center bg-[#F3F6F4] p-1 rounded-full border border-[#E5EAE7]">
+          <div className="inline-flex items-center bg-white p-1 rounded-full border border-slate-200 shadow-2xs">
             <button
               type="button"
               onClick={() => onLanguageChange('hi')}
               className={`px-2.5 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                language === 'hi' ? 'bg-[#107C41] text-white shadow-xs' : 'text-[#66736C] hover:text-[#17231D]'
+                language === 'hi' ? 'bg-[#E8433D] text-white shadow-xs' : 'text-slate-600 hover:text-[#0F1A3C]'
               }`}
             >
               हिन्दी
@@ -287,7 +293,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               type="button"
               onClick={() => onLanguageChange('mr')}
               className={`px-2.5 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                language === 'mr' ? 'bg-[#107C41] text-white shadow-xs' : 'text-[#66736C] hover:text-[#17231D]'
+                language === 'mr' ? 'bg-[#E8433D] text-white shadow-xs' : 'text-slate-600 hover:text-[#0F1A3C]'
               }`}
             >
               मराठी
@@ -296,7 +302,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               type="button"
               onClick={() => onLanguageChange('en')}
               className={`px-2.5 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                language === 'en' ? 'bg-[#107C41] text-white shadow-xs' : 'text-[#66736C] hover:text-[#17231D]'
+                language === 'en' ? 'bg-[#E8433D] text-white shadow-xs' : 'text-slate-600 hover:text-[#0F1A3C]'
               }`}
             >
               EN
@@ -307,27 +313,74 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
       {/* Main Container */}
       <div className="max-w-md w-full mx-auto flex-1 flex flex-col justify-center">
+        {/* Role Tag Banner */}
+        {activeTab !== 'onboarding' && (
+          <div className="mb-5 p-3 rounded-2xl bg-white border border-slate-200 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#0F1A3C] text-white flex items-center justify-center shrink-0 shadow-xs">
+                {selectedRole === 'collector' ? (
+                  <Truck className="w-4 h-4 stroke-[2.5]" />
+                ) : (
+                  <Building2 className="w-4 h-4 stroke-[2.5]" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#0F1A3C]">
+                    {selectedRole === 'collector'
+                      ? language === 'hi'
+                        ? 'कलेक्टर पोर्टल (Collector)'
+                        : 'Collector Portal'
+                      : language === 'hi'
+                      ? 'रीसाइक्लर पोर्टल (Recycler)'
+                      : 'Recycler Portal'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  {selectedRole === 'collector'
+                    ? language === 'hi'
+                      ? 'कचरा बेचें, कमाई ट्रैक करें'
+                      : 'Sell scrap, track earnings'
+                    : language === 'hi'
+                    ? 'पिकअप प्रबंधित करें, हैंडओवर सत्यापित करें'
+                    : 'Manage pickups, verify handovers'}
+                </p>
+              </div>
+            </div>
+            {onChangeRole && (
+              <button
+                type="button"
+                id="login-change-role-btn"
+                onClick={onChangeRole}
+                className="text-xs font-bold text-[#0F1A3C] hover:text-[#E8433D] bg-[#EEF1F8] hover:bg-slate-200 px-2.5 py-1 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs shrink-0"
+              >
+                {language === 'hi' ? 'बदलें' : 'Change'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* ======================================================== */}
         {/* VIEW: ONBOARDING INTRO (Screen 2 Reference)              */}
         {/* ======================================================== */}
         {activeTab === 'onboarding' && (
           <div className="flex flex-col items-center text-center space-y-6 animate-in fade-in duration-300">
             {/* Friendly Flat Illustration */}
-            <div className="w-full aspect-4/3 max-h-60 rounded-3xl bg-[#E8F5E9]/60 border border-[#D0E7D7] p-6 flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="w-20 h-20 rounded-full bg-[#107C41] text-white flex items-center justify-center shadow-lg mb-3">
+            <div className="w-full aspect-4/3 max-h-60 rounded-3xl bg-[#0F1A3C] text-white p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-md">
+              <div className="w-20 h-20 rounded-full bg-white/10 text-[#E8433D] flex items-center justify-center shadow-lg mb-3">
                 <Truck className="w-10 h-10" />
               </div>
-              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-xs border border-[#E5EAE7]">
-                <span className="w-2 h-2 rounded-full bg-[#107C41]" />
-                <span className="text-xs font-bold text-[#107C41]">100% CPCB Certified Network</span>
+              <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full shadow-xs border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-[#E8433D]" />
+                <span className="text-xs font-bold text-white">100% CPCB Certified Network</span>
               </div>
             </div>
 
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#17231D] tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#0F1A3C] tracking-tight">
                 Real-Time Waste Collection Tracking
               </h2>
-              <p className="text-sm text-[#66736C] mt-2 max-w-xs mx-auto leading-relaxed">
+              <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
                 {language === 'hi'
                   ? 'कचरे को सीधे अधिकृत रीसाइक्लर तक पहुँचाएँ और तुरंत उचित मूल्य पाएं।'
                   : 'Connect scrap collectors directly to verified recyclers with fair transparent pricing.'}
@@ -337,7 +390,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             <button
               type="button"
               onClick={() => switchToLogin()}
-              className="w-full h-12 sm:h-13 rounded-full bg-[#107C41] hover:bg-[#0E6C38] active:bg-[#0C5D30] text-white font-bold text-base shadow-sm transition-all flex items-center justify-center cursor-pointer"
+              className="w-full h-12 sm:h-13 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] active:bg-[#B71C1C] text-white font-black text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center cursor-pointer"
             >
               {language === 'hi' ? 'शुरू करें (Mulai)' : 'Get Started'}
             </button>
@@ -351,10 +404,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Simple Bold Heading Centered */}
             <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl font-black text-[#17231D] tracking-wider uppercase">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0F1A3C] tracking-wider uppercase">
                 LOGIN
               </h1>
-              <p className="text-xs text-[#66736C] mt-1 font-medium">
+              <p className="text-xs text-slate-500 mt-1 font-medium">
                 {language === 'hi' ? 'अपने पंजीकृत खाते में प्रवेश करें' : 'Sign in to your collector or recycler account'}
               </p>
             </div>
@@ -370,7 +423,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => switchToRegister(loginEmail, loginPassword)}
-                    className="self-end text-xs font-bold text-[#107C41] underline cursor-pointer"
+                    className="self-end text-xs font-bold text-[#E8433D] underline cursor-pointer"
                   >
                     {language === 'hi' ? 'यहाँ नया खाता रजिस्टर करें →' : 'Register New Account Here →'}
                   </button>
@@ -380,8 +433,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
             {/* Success Message */}
             {successMessage && (
-              <div className="p-3.5 bg-[#E8F5E9] text-[#107C41] text-xs rounded-2xl border border-[#D0E7D7] font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 shrink-0 text-[#107C41]" />
+              <div className="p-3.5 bg-emerald-50 text-emerald-700 text-xs rounded-2xl border border-emerald-200 font-medium flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -389,7 +442,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             {/* Clean Form */}
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1.5 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1.5 ml-1">
                   {language === 'hi' ? 'ईमेल (Email)' : 'Email'}
                 </label>
                 <div className="relative">
@@ -400,13 +453,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full h-12 px-4 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                    className="w-full h-12 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1.5 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1.5 ml-1">
                   {language === 'hi' ? 'पासवर्ड (Password)' : 'Password'}
                 </label>
                 <div className="relative">
@@ -417,12 +470,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Password"
-                    className="w-full h-12 pl-4 pr-12 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                    className="w-full h-12 pl-4 pr-12 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8A968F] hover:text-[#17231D] cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0F1A3C] cursor-pointer"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -430,12 +483,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </div>
               </div>
 
-              {/* Rounded Solid Green Pill Button */}
+              {/* Rounded Solid Red Pill Button */}
               <button
                 id="login-submit-btn"
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 sm:h-13 mt-2 rounded-full bg-[#107C41] hover:bg-[#0E6C38] active:bg-[#0C5D30] text-white font-bold text-base shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full h-12 sm:h-13 mt-2 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] active:bg-[#B71C1C] text-white font-black text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -445,15 +498,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </button>
             </form>
 
-            {/* Links matching TrashWise: "Tidak memiliki akun? Register", "Lupa Password?" */}
+            {/* Links */}
             <div className="text-center space-y-2.5 pt-2">
-              <p className="text-xs text-[#66736C]">
+              <p className="text-xs text-slate-500">
                 {language === 'hi' ? 'खाता नहीं है? ' : "Don't have an account? "}
                 <button
                   type="button"
                   id="switch-to-register-link"
                   onClick={() => switchToRegister(loginEmail)}
-                  className="font-bold text-[#107C41] hover:underline cursor-pointer"
+                  className="font-bold text-[#E8433D] hover:underline cursor-pointer"
                 >
                   Register
                 </button>
@@ -469,7 +522,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     setError(null);
                     setSuccessMessage(null);
                   }}
-                  className="text-xs font-semibold text-[#107C41] hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-[#0F1A3C] hover:underline cursor-pointer"
                 >
                   {language === 'hi' ? 'पासवर्ड भूल गए? (Forgot Password?)' : 'Forgot Password?'}
                 </button>
@@ -478,8 +531,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
             {/* Divider */}
             <div className="relative flex items-center justify-center my-4">
-              <div className="border-t border-[#E5EAE7] w-full" />
-              <span className="bg-white px-3 text-[11px] text-[#8A968F] uppercase font-semibold shrink-0">
+              <div className="border-t border-slate-200 w-full" />
+              <span className="bg-[#F8F9FD] px-3 text-[11px] text-slate-400 uppercase font-semibold shrink-0">
                 {language === 'hi' ? 'या अन्य विकल्प' : 'or continue with'}
               </span>
             </div>
@@ -489,11 +542,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               id="login-google-btn"
               type="button"
               disabled={loading || googleLoading}
-              onClick={() => handleGoogleSignIn('collector')}
-              className="w-full h-11 px-4 bg-white hover:bg-[#F7F9F8] text-[#17231D] font-bold text-xs sm:text-sm rounded-full border border-[#DCE3DD] hover:border-[#107C41] shadow-2xs transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+              onClick={() => handleGoogleSignIn(selectedRole === 'recycler' ? 'recycler' : 'collector')}
+              className="w-full h-11 px-4 bg-white hover:bg-slate-50 text-[#0F1A3C] font-bold text-xs sm:text-sm rounded-full border border-slate-200 hover:border-[#0F1A3C] shadow-2xs transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
             >
               {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-[#107C41] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[#E8433D] border-t-transparent rounded-full animate-spin" />
               ) : (
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -510,7 +563,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               id="login-guest-btn"
               type="button"
               onClick={onContinueAsGuest}
-              className="w-full text-center text-xs text-[#66736C] hover:text-[#107C41] font-semibold transition-colors cursor-pointer py-1"
+              className="w-full text-center text-xs text-slate-500 hover:text-[#E8433D] font-bold transition-colors cursor-pointer py-1"
             >
               {language === 'hi'
                 ? 'या बिना लॉग इन किए अतिथि के रूप में जारी रखें →'
@@ -526,10 +579,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <div className="space-y-5 animate-in fade-in duration-300">
             {/* Simple Bold Heading Centered */}
             <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl font-black text-[#17231D] tracking-wider uppercase">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0F1A3C] tracking-wider uppercase">
                 REGISTER
               </h1>
-              <p className="text-xs text-[#66736C] mt-1 font-medium">
+              <p className="text-xs text-slate-500 mt-1 font-medium">
                 {language === 'hi' ? 'स्क्रैपसेतु में नया खाता बनाएं' : 'Create your verified recycling partner account'}
               </p>
             </div>
@@ -545,7 +598,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 type="button"
                 onClick={() => switchToLogin(regEmail, regPassword)}
-                className="w-full text-center text-xs font-bold text-[#107C41] underline cursor-pointer"
+                className="w-full text-center text-xs font-bold text-[#E8433D] underline cursor-pointer"
               >
                 {language === 'hi' ? 'पहले से पंजीकृत? यहाँ लॉग इन करें →' : 'Already registered? Log in here →'}
               </button>
@@ -554,8 +607,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             {/* Registration Form */}
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1 ml-1">
-                  {language === 'hi' ? 'पूरा नाम (Nama Lengkap)' : 'Full Name (Nama Lengkap)'} *
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1 ml-1">
+                  {language === 'hi' ? 'पूरा नाम (Full Name)' : 'Full Name'} *
                 </label>
                 <input
                   id="register-name-input"
@@ -563,13 +616,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   required
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  placeholder="Nama Lengkap"
-                  className="w-full h-12 px-4 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                  placeholder="Full Name"
+                  className="w-full h-12 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1 ml-1">
                   {language === 'hi' ? 'ईमेल (Email)' : 'Email'} *
                 </label>
                 <input
@@ -579,12 +632,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="Email"
-                  className="w-full h-12 px-4 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                  className="w-full h-12 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1 ml-1">
                   {language === 'hi' ? 'पासवर्ड (Password)' : 'Password'} *
                 </label>
                 <div className="relative">
@@ -596,12 +649,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Password (min 6 chars)"
-                    className="w-full h-12 pl-4 pr-12 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                    className="w-full h-12 pl-4 pr-12 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8A968F] hover:text-[#17231D] cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0F1A3C] cursor-pointer"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -611,7 +664,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
               {/* Role Selection */}
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1.5 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1.5 ml-1">
                   {language === 'hi' ? 'भूमिका (Role)' : 'Role'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -620,11 +673,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     onClick={() => setRegRole('collector')}
                     className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer ${
                       regRole === 'collector'
-                        ? 'border-[#107C41] bg-[#E8F5E9] text-[#107C41] font-bold shadow-2xs'
-                        : 'border-[#DCE3DD] text-[#66736C] hover:bg-[#F3F6F4]'
+                        ? 'border-[#0F1A3C] bg-[#EEF1F8] text-[#0F1A3C] font-bold shadow-2xs'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    <Truck className="w-4 h-4 mx-auto mb-1 text-[#107C41]" />
+                    <Truck className="w-4 h-4 mx-auto mb-1 text-[#0F1A3C]" />
                     <span className="text-[11px] block">{language === 'hi' ? 'कबाड़ी' : 'Collector'}</span>
                   </button>
                   <button
@@ -632,11 +685,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     onClick={() => setRegRole('seller')}
                     className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer ${
                       regRole === 'seller'
-                        ? 'border-[#107C41] bg-[#E8F5E9] text-[#107C41] font-bold shadow-2xs'
-                        : 'border-[#DCE3DD] text-[#66736C] hover:bg-[#F3F6F4]'
+                        ? 'border-[#0F1A3C] bg-[#EEF1F8] text-[#0F1A3C] font-bold shadow-2xs'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    <Home className="w-4 h-4 mx-auto mb-1 text-[#107C41]" />
+                    <Home className="w-4 h-4 mx-auto mb-1 text-[#0F1A3C]" />
                     <span className="text-[11px] block">{language === 'hi' ? 'घरेलू' : 'Seller'}</span>
                   </button>
                   <button
@@ -644,11 +697,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     onClick={() => setRegRole('recycler')}
                     className={`py-2.5 px-2 rounded-2xl border text-center transition-all cursor-pointer ${
                       regRole === 'recycler'
-                        ? 'border-[#107C41] bg-[#E8F5E9] text-[#107C41] font-bold shadow-2xs'
-                        : 'border-[#DCE3DD] text-[#66736C] hover:bg-[#F3F6F4]'
+                        ? 'border-[#0F1A3C] bg-[#EEF1F8] text-[#0F1A3C] font-bold shadow-2xs'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    <Building2 className="w-4 h-4 mx-auto mb-1 text-[#107C41]" />
+                    <Building2 className="w-4 h-4 mx-auto mb-1 text-[#0F1A3C]" />
                     <span className="text-[11px] block">{language === 'hi' ? 'रीसायकलर' : 'Recycler'}</span>
                   </button>
                 </div>
@@ -657,7 +710,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               {/* City & Pincode */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-[#17231D] mb-1 ml-1">
+                  <label className="block text-xs font-bold text-[#0F1A3C] mb-1 ml-1">
                     {language === 'hi' ? 'शहर (City)' : 'City'}
                   </label>
                   <input
@@ -665,11 +718,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}
                     placeholder="Mumbai"
-                    className="w-full h-11 px-3 bg-white border border-[#DCE3DD] rounded-xl text-xs font-medium focus:border-[#107C41] focus:outline-none"
+                    className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:border-[#E8433D] focus:outline-none text-[#0F1A3C]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#17231D] mb-1 ml-1">
+                  <label className="block text-xs font-bold text-[#0F1A3C] mb-1 ml-1">
                     {language === 'hi' ? 'पिनकोड (Pincode)' : 'Pincode'}
                   </label>
                   <input
@@ -677,17 +730,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     value={regPincode}
                     onChange={(e) => setRegPincode(e.target.value)}
                     placeholder="400017"
-                    className="w-full h-11 px-3 bg-white border border-[#DCE3DD] rounded-xl text-xs font-medium focus:border-[#107C41] focus:outline-none"
+                    className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:border-[#E8433D] focus:outline-none text-[#0F1A3C]"
                   />
                 </div>
               </div>
 
-              {/* Green Pill Register Button */}
+              {/* Red Pill Register Button */}
               <button
                 id="register-submit-btn"
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 sm:h-13 mt-3 rounded-full bg-[#107C41] hover:bg-[#0E6C38] active:bg-[#0C5D30] text-white font-bold text-base shadow-sm transition-all flex items-center justify-center cursor-pointer disabled:opacity-60"
+                className="w-full h-12 sm:h-13 mt-3 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] active:bg-[#B71C1C] text-white font-black text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center cursor-pointer disabled:opacity-60"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -697,15 +750,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </button>
             </form>
 
-            {/* Link matching TrashWise: "Sudah memiliki akun? Login" */}
+            {/* Link */}
             <div className="text-center pt-2">
-              <p className="text-xs text-[#66736C]">
-                {language === 'hi' ? 'पहले से खाता है? ' : 'Sudah memiliki akun? / Already registered? '}
+              <p className="text-xs text-slate-500">
+                {language === 'hi' ? 'पहले से खाता है? ' : 'Already registered? '}
                 <button
                   type="button"
                   id="switch-to-login-link"
                   onClick={() => switchToLogin(regEmail)}
-                  className="font-bold text-[#107C41] hover:underline cursor-pointer"
+                  className="font-bold text-[#E8433D] hover:underline cursor-pointer"
                 >
                   Login
                 </button>
@@ -720,10 +773,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {activeTab === 'forgot' && (
           <div className="space-y-5 animate-in fade-in duration-300">
             <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl font-black text-[#17231D] tracking-wider uppercase">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0F1A3C] tracking-wider uppercase">
                 RESET PASSWORD
               </h1>
-              <p className="text-xs text-[#66736C] mt-1 font-medium">
+              <p className="text-xs text-slate-500 mt-1 font-medium">
                 {language === 'hi' ? 'पासवर्ड रीसेट लिंक प्राप्त करने के लिए ईमेल दर्ज करें' : 'Enter registered email to receive reset link'}
               </p>
             </div>
@@ -735,15 +788,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </div>
             )}
             {successMessage && (
-              <div className="p-3.5 bg-[#E8F5E9] text-[#107C41] text-xs rounded-2xl border border-[#D0E7D7] font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 shrink-0 text-[#107C41]" />
+              <div className="p-3.5 bg-emerald-50 text-emerald-700 text-xs rounded-2xl border border-emerald-200 font-medium flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>{successMessage}</span>
               </div>
             )}
 
             <form onSubmit={handleForgotSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231D] mb-1.5 ml-1">
+                <label className="block text-xs font-bold text-[#0F1A3C] mb-1.5 ml-1">
                   {language === 'hi' ? 'ईमेल पता' : 'Email Address'}
                 </label>
                 <input
@@ -752,14 +805,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Email"
-                  className="w-full h-12 px-4 bg-white border border-[#DCE3DD] rounded-2xl text-sm font-medium placeholder-[#9CA8A1] focus:border-[#107C41] focus:ring-1 focus:ring-[#107C41] focus:outline-none transition-all"
+                  className="w-full h-12 px-4 bg-white border border-slate-200 rounded-2xl text-sm font-medium placeholder-slate-400 focus:border-[#E8433D] focus:ring-2 focus:ring-[#E8433D]/20 focus:outline-none transition-all text-[#0F1A3C]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 rounded-full bg-[#107C41] hover:bg-[#0E6C38] text-white font-bold text-base shadow-sm transition-all flex items-center justify-center cursor-pointer disabled:opacity-60"
+                className="w-full h-12 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] text-white font-black text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center cursor-pointer disabled:opacity-60"
               >
                 {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
@@ -769,7 +822,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 type="button"
                 onClick={() => switchToLogin(forgotEmail)}
-                className="text-xs font-bold text-[#107C41] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#E8433D] hover:underline cursor-pointer"
               >
                 ← Back to Login
               </button>
@@ -779,7 +832,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       </div>
 
       {/* Footer subtle brand mark */}
-      <div className="max-w-md w-full mx-auto text-center pt-6 text-[11px] text-[#8A968F]">
+      <div className="max-w-md w-full mx-auto text-center pt-6 text-[11px] text-slate-400">
         <span>ScrapSetu • Certified CPCB E-Waste Network</span>
       </div>
     </div>

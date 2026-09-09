@@ -1,6 +1,6 @@
 import React from 'react';
 import { IndianRupee, TrendingUp, Sparkles, ShieldCheck, ArrowRight, Info, AlertTriangle } from 'lucide-react';
-import { Language, WasteCategory } from '../types';
+import { Language, WasteCategory, WasteCategoryInfo } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 import { WASTE_CATEGORIES } from '../data/mockData';
 import { VoiceButton } from '../components/VoiceButton';
@@ -18,6 +18,7 @@ interface Step5FairPriceScreenProps {
     fairAdvantageAmount: number;
   }) => void;
   onBack: () => void;
+  categories?: WasteCategoryInfo[];
 }
 
 export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
@@ -27,9 +28,11 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
   condition,
   onPriceConfirmed,
   onBack,
+  categories = WASTE_CATEGORIES,
 }) => {
   const t = TRANSLATIONS[language];
-  const catInfo = WASTE_CATEGORIES.find((c) => c.id === category) || WASTE_CATEGORIES[0];
+  const allCats = categories && categories.length > 0 ? categories : WASTE_CATEGORIES;
+  const catInfo = allCats.find((c) => c.id === category) || allCats[0];
 
   // Calculate rate
   let conditionMultiplier = 1.0;
@@ -66,13 +69,13 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#DDE6E0]">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2.5">
-            <IndianRupee className="w-6 h-6 text-[#176B45]" />
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F1A3C] flex items-center gap-2.5">
+            <IndianRupee className="w-6 h-6 text-[#E8433D]" />
             <span>{t.fairPriceEstimate}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {weightKg} kg {language === 'hi' ? catInfo.nameHi : catInfo.nameEn}
           </p>
         </div>
@@ -80,27 +83,27 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
       </div>
 
       {/* Main Fair Price Highlight Card */}
-      <div className="bg-white rounded-2xl border border-[#DDE6E0] p-5 sm:p-6 space-y-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-6 shadow-xs">
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-[#EAF6EF] text-[#16834A] border border-[#16834A]/20">
-            <ShieldCheck className="w-4 h-4" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-[#EEF1F8] text-[#0F1A3C] border border-slate-200">
+            <ShieldCheck className="w-4 h-4 text-[#E8433D]" />
             <span>{t.guaranteedRate}</span>
           </span>
-          <span className="text-xs sm:text-sm font-bold text-[#66736C]">
+          <span className="text-xs sm:text-sm font-bold text-slate-500">
             ₹{fairPricePerKg} / kg
           </span>
         </div>
 
         {/* Big Estimated Price */}
-        <div className="text-center py-5 bg-[#F7F9F8] rounded-2xl border border-[#DDE6E0] p-4 shadow-inner">
-          <span className="text-xs sm:text-sm font-semibold text-[#66736C] block">
+        <div className="text-center py-5 bg-[#F8F9FD] rounded-2xl border border-slate-200 p-4 shadow-inner">
+          <span className="text-xs sm:text-sm font-semibold text-slate-500 block">
             {language === 'hi' ? 'आपको मिलने वाली अनुमानित राशि' : 'Estimated Direct Recycler Payout'}
           </span>
-          <div className="text-4xl sm:text-5xl font-extrabold text-[#17231D] mt-2 tabular-nums flex items-center justify-center gap-1.5">
-            <span className="text-2xl sm:text-3xl text-[#176B45]">₹</span>
+          <div className="text-4xl sm:text-5xl font-black text-[#0F1A3C] mt-2 tabular-nums flex items-center justify-center gap-1.5">
+            <span className="text-2xl sm:text-3xl text-[#E8433D]">₹</span>
             <span>{totalFairPrice.toLocaleString('en-IN')}</span>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-3 rounded-full bg-[#EAF6EF] text-[#16834A] text-xs font-bold border border-[#16834A]/20 shadow-xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-3 rounded-full bg-[#EEF1F8] text-[#E8433D] text-xs font-bold border border-[#E8433D]/20 shadow-xs">
             <TrendingUp className="w-4 h-4" />
             <span>
               +{percentageGain}% {language === 'hi' ? 'दलाल से अधिक मुनाफा' : 'Higher than Informal Middleman'}
@@ -109,38 +112,38 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
         </div>
 
         {/* Comparison Bar / Slider comparing Fair Recycler vs Exploitative Middleman */}
-        <div className="border-t border-[#DDE6E0] pt-4 space-y-4">
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-[#17231D]">
+        <div className="border-t border-slate-200 pt-4 space-y-4">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-[#0F1A3C]">
             <span>{language === 'hi' ? 'पारदर्शी भाव तुलना' : 'Price Transparency Comparison'}</span>
-            <span className="text-[#176B45] font-bold bg-[#EAF6EF] px-2.5 py-0.5 rounded-full border border-[#176B45]/20">+₹{fairAdvantage} Advantage</span>
+            <span className="text-[#E8433D] font-bold bg-[#EEF1F8] px-2.5 py-0.5 rounded-full border border-[#E8433D]/20">+₹{fairAdvantage} Advantage</span>
           </div>
 
           {/* ScrapSetu Authorized Rate Bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs sm:text-sm">
-              <span className="font-bold text-[#176B45] flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" />
+              <span className="font-bold text-[#0F1A3C] flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#E8433D]" />
                 <span>Authorized Recyclers (ScrapSetu)</span>
               </span>
-              <span className="font-bold text-[#176B45] tabular-nums">₹{totalFairPrice}</span>
+              <span className="font-black text-[#E8433D] tabular-nums">₹{totalFairPrice}</span>
             </div>
-            <div className="w-full h-3 bg-[#F7F9F8] border border-[#DDE6E0] rounded-full overflow-hidden">
-              <div className="h-full bg-[#176B45] rounded-full transition-all duration-500 w-full" />
+            <div className="w-full h-3 bg-[#EEF1F8] border border-slate-200 rounded-full overflow-hidden">
+              <div className="h-full bg-[#E8433D] rounded-full transition-all duration-500 w-full" />
             </div>
           </div>
 
           {/* Middleman Rate Bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs sm:text-sm">
-              <span className="font-medium text-[#66736C] flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-slate-500 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-slate-400" />
                 <span>{t.middlemanRate}</span>
               </span>
-              <span className="font-bold text-[#66736C] line-through tabular-nums">₹{totalMiddlemanPrice}</span>
+              <span className="font-bold text-slate-500 line-through tabular-nums">₹{totalMiddlemanPrice}</span>
             </div>
-            <div className="w-full h-2.5 bg-[#F7F9F8] border border-[#DDE6E0] rounded-full overflow-hidden">
+            <div className="w-full h-2.5 bg-[#EEF1F8] border border-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gray-400 rounded-full transition-all duration-500"
+                className="h-full bg-slate-400 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.round((totalMiddlemanPrice / totalFairPrice) * 100))}%` }}
               />
             </div>
@@ -148,30 +151,30 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
         </div>
 
         {/* Why Fair Price Explainer Box for Trust */}
-        <div className="p-4 bg-[#F7F9F8] rounded-xl border border-[#DDE6E0] text-xs sm:text-sm text-[#66736C] flex items-start gap-3">
-          <Info className="w-5 h-5 text-[#176B45] shrink-0 mt-0.5" />
+        <div className="p-4 bg-[#F8F9FD] rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-600 flex items-start gap-3">
+          <Info className="w-5 h-5 text-[#E8433D] shrink-0 mt-0.5" />
           <p className="leading-relaxed">{t.whyFairPrice}</p>
         </div>
 
         {/* Calculation Breakdown Sheet */}
-        <div className="bg-[#F7F9F8] rounded-xl p-4 text-xs sm:text-sm space-y-2 border border-[#DDE6E0]">
-          <div className="flex justify-between text-[#66736C]">
+        <div className="bg-[#F8F9FD] rounded-xl p-4 text-xs sm:text-sm space-y-2 border border-slate-200">
+          <div className="flex justify-between text-slate-500">
             <span>Base CPCB Rate:</span>
-            <span className="tabular-nums font-semibold text-[#17231D]">₹{catInfo.basePricePerKg}/kg</span>
+            <span className="tabular-nums font-semibold text-[#0F1A3C]">₹{catInfo.basePricePerKg}/kg</span>
           </div>
-          <div className="flex justify-between text-[#66736C]">
+          <div className="flex justify-between text-slate-500">
             <span>Condition Multiplier:</span>
-            <span className={conditionMultiplier >= 1.0 ? 'text-[#16834A] font-bold tabular-nums' : 'text-[#E59A23] font-bold tabular-nums'}>
+            <span className={conditionMultiplier >= 1.0 ? 'text-[#E8433D] font-bold tabular-nums' : 'text-amber-600 font-bold tabular-nums'}>
               {(conditionMultiplier * 100).toFixed(0)}% ({condition.cleanliness === 'clean' ? 'Clean sorted' : 'Dirty mixed'})
             </span>
           </div>
-          <div className="flex justify-between text-[#66736C]">
+          <div className="flex justify-between text-slate-500">
             <span>Weight:</span>
-            <span className="tabular-nums font-semibold text-[#17231D]">{weightKg.toFixed(1)} kg</span>
+            <span className="tabular-nums font-semibold text-[#0F1A3C]">{weightKg.toFixed(1)} kg</span>
           </div>
-          <div className="border-t border-[#DDE6E0] pt-2 flex justify-between font-bold text-[#17231D] text-base">
+          <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-[#0F1A3C] text-base">
             <span>{language === 'hi' ? 'कुल उचित राशि:' : 'Total Payable:'}</span>
-            <span className="text-[#176B45] tabular-nums font-extrabold">₹{totalFairPrice}</span>
+            <span className="text-[#E8433D] tabular-nums font-black">₹{totalFairPrice}</span>
           </div>
         </div>
 
@@ -180,7 +183,7 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
           <button
             id="price-back-btn"
             onClick={onBack}
-            className="py-3 px-5 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
+            className="py-3 px-5 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
           >
             {t.back}
           </button>
@@ -188,7 +191,7 @@ export const Step5FairPriceScreen: React.FC<Step5FairPriceScreenProps> = ({
           <button
             id="price-proceed-btn"
             onClick={handleProceed}
-            className="flex-1 py-3 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow-md transition-all"
+            className="flex-1 py-3 px-5 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E8433D]/25 transition-all"
           >
             <span>{language === 'hi' ? 'रिसाइक्लर्स की तुलना करें' : 'Compare Recyclers & Bids'}</span>
             <ArrowRight className="w-4 h-4" />

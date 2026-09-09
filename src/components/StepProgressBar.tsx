@@ -44,19 +44,19 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({
       : currentDef.labelEn;
 
   return (
-    <div className="bg-white/95 backdrop-blur-md border-b border-[#DDE6E0] px-4 py-2.5 sticky top-[68px] z-20 transition-all">
+    <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 sticky top-[58px] z-20 transition-all">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
         {/* Step Badge & Name */}
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-[#176B45] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+          <div className="w-6 h-6 rounded-lg bg-[#0F1A3C] text-white flex items-center justify-center font-bold text-xs shadow-xs">
             {currentStep}
           </div>
           <div>
-            <div className="text-[11px] text-[#66736C] font-medium leading-none">
+            <div className="text-[11px] text-slate-500 font-medium leading-none">
               {language === 'hi' ? 'चरण' : language === 'mr' ? 'पायरी' : 'Step'} {currentStep} of {totalSteps}
             </div>
-            <div className="text-xs font-bold text-[#17231D] flex items-center gap-1.5 leading-tight mt-0.5">
-              <Icon className="w-3.5 h-3.5 text-[#176B45]" />
+            <div className="text-xs font-bold text-[#0F1A3C] flex items-center gap-1.5 leading-tight mt-0.5">
+              <Icon className="w-3.5 h-3.5 text-[#E8433D]" />
               <span>{stepTitle}</span>
             </div>
           </div>
@@ -81,10 +81,10 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({
                 title={`Step ${s.step}: ${s.labelEn}`}
                 className={`transition-all rounded-full ${
                   isCurrent
-                    ? 'w-6 h-2 bg-[#176B45] shadow-xs'
+                    ? 'w-6 h-2 bg-[#E8433D] shadow-xs'
                     : isCompleted
-                    ? 'w-2.5 h-2 bg-[#176B45]/40 hover:bg-[#176B45] cursor-pointer'
-                    : 'w-2 h-2 bg-[#DDE6E0] cursor-not-allowed'
+                    ? 'w-2.5 h-2 bg-[#0F1A3C] hover:bg-[#E8433D] cursor-pointer'
+                    : 'w-2 h-2 bg-slate-200 cursor-not-allowed'
                 }`}
               />
             );

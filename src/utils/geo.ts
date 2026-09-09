@@ -74,3 +74,26 @@ export const getGoogleMapsDirectionsUrl = (destLat: number, destLng: number, des
   const query = destName ? `${destLat},${destLng}+(${encodeURIComponent(destName)})` : `${destLat},${destLng}`;
   return `https://www.google.com/maps/dir/?api=1&destination=${query}&travelmode=driving`;
 };
+
+// Cleanly format address and city without redundancy (e.g. avoiding "Gangapur Varanasi Uttar Pradesh, Mumbai")
+export const formatDisplayAddress = (address?: string, city?: string): string => {
+  const addr = (address || '').trim();
+  const c = (city || '').trim();
+  if (!c) return addr;
+  if (!addr) return c;
+  if (addr.toLowerCase().includes(c.toLowerCase())) return addr;
+  
+  // If the address explicitly mentions another Indian city/state and city is default Mumbai, do not append Mumbai
+  const otherLocations = [
+    'varanasi', 'uttar pradesh', 'up', 'delhi', 'ncr', 'noida', 'gurugram', 
+    'lucknow', 'pune', 'bengaluru', 'bangalore', 'chennai', 'kolkata', 
+    'hyderabad', 'ahmedabad', 'surat', 'jaipur', 'kanpur', 'nagpur', 'indore', 'patna'
+  ];
+  const addrLower = addr.toLowerCase();
+  const hasOtherLocation = otherLocations.some((loc) => addrLower.includes(loc));
+  if (hasOtherLocation && c.toLowerCase() === 'mumbai') {
+    return addr;
+  }
+  return `${addr}, ${c}`;
+};
+

@@ -177,11 +177,38 @@ export async function seedRecyclersToFirestore(): Promise<void> {
   }
 }
 
+// Map Firestore doc to WasteCategoryInfo supporting custom created categories
+export function mapDocToCategory(data: any, docId: string): WasteCategoryInfo {
+  const matched = WASTE_CATEGORIES.find((c) => c.id === (data.id || docId));
+  const nameEn = data.nameEn || data.name || (matched ? matched.nameEn : docId);
+  const nameHi = data.nameHi || data.hindiName || (matched ? matched.nameHi : nameEn);
+  const nameMr = data.nameMr || data.marathiName || (matched ? matched.nameMr : nameHi);
+  const basePricePerKg = Number(data.basePricePerKg ?? data.baseRatePerKg ?? (matched ? matched.basePricePerKg : 50));
+  const marketRatePerKg = Number(data.marketRatePerKg ?? data.ratePerKg ?? (matched ? matched.marketRatePerKg : 40));
+
+  return {
+    id: (data.id || docId) as any,
+    nameEn,
+    nameHi,
+    nameMr,
+    icon: data.icon || (matched ? matched.icon : 'Package'),
+    subtypes: Array.isArray(data.subtypes) && data.subtypes.length > 0
+      ? data.subtypes
+      : (matched ? matched.subtypes : [nameEn]),
+    basePricePerKg,
+    marketRatePerKg,
+    hazardLevel: data.hazardLevel || data.safetyHazard || (matched ? matched.hazardLevel : 'low'),
+    color: data.color || (matched ? matched.color : '#0F1A3C'),
+    createdBy: data.createdBy,
+    createdAt: data.createdAt,
+  };
+}
+
 // Helper to transform Firestore doc data into a full Recycler object
 export function mapDocToRecycler(data: any, docId: string): Recycler {
   const matched = MOCK_RECYCLERS.find((r) => r.id === (data.id || docId));
   
-  let acceptedCats: WasteCategory[] = [];
+  let acceptedCats: (WasteCategory | string)[] = [];
   if (Array.isArray(data.acceptedCategories) && data.acceptedCategories.length > 0) {
     acceptedCats = data.acceptedCategories;
   } else if (data.category) {
@@ -210,94 +237,9 @@ export function mapDocToRecycler(data: any, docId: string): Recycler {
     pickupTimeHours: typeof data.pickupTimeHours === 'number' ? data.pickupTimeHours : (matched ? matched.pickupTimeHours : 3),
     phone: data.phone || (matched ? matched.phone : '+91 98200 12345'),
     verifiedBadge: data.verifiedBadge ?? data.isVerified ?? (matched ? matched.verifiedBadge : true),
+    customRates: data.customRates || (matched?.customRates || {}),
+    ownerUid: data.ownerUid || matched?.ownerUid,
   };
-}
-
-// Add or update a single Recycler in Firestore
-export async function addRecyclerToFirestore(rec: Recycler): Promise<void> {
-  const safeId = (rec.id || `rec-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
-  const path = `recyclers/${safeId}`;
-  try {
-    const recDocRef = doc(db, 'recyclers', safeId);
-    await setDoc(recDocRef, {
-      id: safeId,
-      name: rec.name.slice(0, 100),
-      cpcbRegNumber: (rec.cpcbRegNumber || 'CPCB/EPR-EW/2024/IND').slice(0, 60),
-      spcbCertified: !!rec.spcbCertified,
-      address: (rec.address || '').slice(0, 150),
-      city: (rec.city || 'Mumbai').slice(0, 60),
-      lat: Number(rec.lat || 19.0760),
-      lng: Number(rec.lng || 72.8777),
-      rating: Number(rec.rating || 4.8),
-      reviewCount: Number(rec.reviewCount || 10),
-      acceptedCategories: Array.isArray(rec.acceptedCategories) ? rec.acceptedCategories : ['E-waste'],
-      priceMultiplier: Number(rec.priceMultiplier || 1.05),
-      pickupAvailable: !!rec.pickupAvailable,
-      minPickupWeightKg: Number(rec.minPickupWeightKg || 10),
-      pickupTimeHours: Number(rec.pickupTimeHours || 3),
-      phone: (rec.phone || '').slice(0, 30),
-      verifiedBadge: !!rec.verifiedBadge,
-      category: (rec.acceptedCategories?.[0] || 'E-waste').slice(0, 50),
-      isVerified: !!rec.verifiedBadge,
-      eprCertified: !!rec.spcbCertified,
-      createdAt: new Date().toISOString(),
-    }, { merge: true });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
-    throw error;
-  }
-}
-
-// Add multiple Recyclers to Firestore in a batch
-export async function addMultipleRecyclersToFirestore(recyclers: Recycler[]): Promise<void> {
-  if (!recyclers || recyclers.length === 0) return;
-  const path = 'recyclers';
-  try {
-    const batch = writeBatch(db);
-    recyclers.forEach((rec, idx) => {
-      const safeId = (rec.id || `rec-${Date.now()}-${idx}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
-      const recDocRef = doc(db, 'recyclers', safeId);
-      batch.set(recDocRef, {
-        id: safeId,
-        name: rec.name.slice(0, 100),
-        cpcbRegNumber: (rec.cpcbRegNumber || 'CPCB/EPR-EW/2024/IND').slice(0, 60),
-        spcbCertified: !!rec.spcbCertified,
-        address: (rec.address || '').slice(0, 150),
-        city: (rec.city || 'Mumbai').slice(0, 60),
-        lat: Number(rec.lat || 19.0760),
-        lng: Number(rec.lng || 72.8777),
-        rating: Number(rec.rating || 4.8),
-        reviewCount: Number(rec.reviewCount || 10),
-        acceptedCategories: Array.isArray(rec.acceptedCategories) ? rec.acceptedCategories : ['E-waste'],
-        priceMultiplier: Number(rec.priceMultiplier || 1.05),
-        pickupAvailable: !!rec.pickupAvailable,
-        minPickupWeightKg: Number(rec.minPickupWeightKg || 10),
-        pickupTimeHours: Number(rec.pickupTimeHours || 3),
-        phone: (rec.phone || '').slice(0, 30),
-        verifiedBadge: !!rec.verifiedBadge,
-        category: (rec.acceptedCategories?.[0] || 'E-waste').slice(0, 50),
-        isVerified: !!rec.verifiedBadge,
-        eprCertified: !!rec.spcbCertified,
-        createdAt: new Date().toISOString(),
-      }, { merge: true });
-    });
-    await batch.commit();
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
-    throw error;
-  }
-}
-
-// Delete a recycler from Firestore
-export async function deleteRecyclerFromFirestore(recyclerId: string): Promise<void> {
-  const safeId = recyclerId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
-  const path = `recyclers/${safeId}`;
-  try {
-    await deleteDoc(doc(db, 'recyclers', safeId));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
-    throw error;
-  }
 }
 
 // Fetch recyclers from Firestore
@@ -306,16 +248,23 @@ export async function fetchRecyclersFromFirestore(): Promise<Recycler[]> {
   try {
     const snapshot = await getDocs(collection(db, path));
     if (snapshot.empty) {
-      return MOCK_RECYCLERS;
+      // Seed verified facilities to Firestore so real documents exist
+      await seedRecyclersToFirestore();
+      const freshSnap = await getDocs(collection(db, path));
+      const list: Recycler[] = [];
+      freshSnap.forEach((d) => {
+        list.push(mapDocToRecycler(d.data(), d.id));
+      });
+      return list.length > 0 ? list : MOCK_RECYCLERS;
     }
     const list: Recycler[] = [];
     snapshot.forEach((d) => {
       list.push(mapDocToRecycler(d.data(), d.id));
     });
-    return list.length > 0 ? list : MOCK_RECYCLERS;
+    return list;
   } catch (error) {
-    console.warn('Could not read recyclers from Firestore, falling back to local data:', error);
-    return MOCK_RECYCLERS;
+    console.warn('Could not read recyclers from Firestore:', error);
+    return [];
   }
 }
 
@@ -326,22 +275,22 @@ export async function fetchCategoriesFromFirestore(): Promise<WasteCategoryInfo[
     if (!snap.empty) {
       const list: WasteCategoryInfo[] = [];
       snap.forEach((d) => {
-        const data = d.data();
-        const matched = WASTE_CATEGORIES.find((c) => c.id === data.id);
-        if (matched) {
-          list.push({
-            ...matched,
-            marketRatePerKg: data.ratePerKg ?? matched.marketRatePerKg,
-            basePricePerKg: data.baseRatePerKg ?? matched.basePricePerKg,
-          });
-        }
+        list.push(mapDocToCategory(d.data(), d.id));
       });
-      if (list.length > 0) return list;
+      return list;
     }
+    // If Firestore empty, seed standard categories
+    await seedCategoriesToFirestore();
+    const fresh = await getDocs(collection(db, 'categories'));
+    const list: WasteCategoryInfo[] = [];
+    fresh.forEach((d) => {
+      list.push(mapDocToCategory(d.data(), d.id));
+    });
+    return list.length > 0 ? list : WASTE_CATEGORIES;
   } catch (err) {
     console.warn('Failed to fetch categories from Firestore:', err);
+    return WASTE_CATEGORIES;
   }
-  return WASTE_CATEGORIES;
 }
 
 // Subscribe to Categories in Firestore
@@ -351,17 +300,9 @@ export function subscribeCategories(callback: (categories: WasteCategoryInfo[]) 
     if (!snapshot.empty) {
       const list: WasteCategoryInfo[] = [];
       snapshot.forEach((d) => {
-        const data = d.data();
-        const matched = WASTE_CATEGORIES.find((c) => c.id === data.id);
-        if (matched) {
-          list.push({
-            ...matched,
-            marketRatePerKg: data.ratePerKg ?? matched.marketRatePerKg,
-            basePricePerKg: data.baseRatePerKg ?? matched.basePricePerKg,
-          });
-        }
+        list.push(mapDocToCategory(d.data(), d.id));
       });
-      if (list.length > 0) callback(list);
+      callback(list);
     }
   }, (error) => {
     console.warn('Categories snapshot listener error:', error);
@@ -377,11 +318,99 @@ export function subscribeRecyclers(callback: (recyclers: Recycler[]) => void): (
       snapshot.forEach((d) => {
         list.push(mapDocToRecycler(d.data(), d.id));
       });
-      if (list.length > 0) callback(list);
+      callback(list);
     }
   }, (error) => {
     console.warn('Recyclers snapshot listener error:', error);
   });
+}
+
+// Recycler: Create a new waste category in Firestore
+export async function createCategoryInFirestore(categoryData: {
+  nameEn: string;
+  nameHi: string;
+  marketRatePerKg: number;
+  basePricePerKg?: number;
+  hazardLevel?: 'low' | 'medium' | 'high';
+  unit?: string;
+  subtypes?: string[];
+  createdBy?: string;
+}): Promise<WasteCategoryInfo> {
+  const safeId = categoryData.nameEn.trim().replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `categories/${safeId}`;
+  const basePricePerKg = Number(categoryData.basePricePerKg ?? Math.round(categoryData.marketRatePerKg * 1.12));
+  const marketRatePerKg = Number(categoryData.marketRatePerKg);
+
+  const payload = {
+    id: safeId,
+    name: categoryData.nameEn.trim(),
+    nameEn: categoryData.nameEn.trim(),
+    hindiName: categoryData.nameHi.trim() || categoryData.nameEn.trim(),
+    nameHi: categoryData.nameHi.trim() || categoryData.nameEn.trim(),
+    ratePerKg: marketRatePerKg,
+    baseRatePerKg: basePricePerKg,
+    recyclable: true,
+    safetyHazard: categoryData.hazardLevel || 'low',
+    hazardLevel: categoryData.hazardLevel || 'low',
+    unit: categoryData.unit || 'kg',
+    subtypes: categoryData.subtypes || [categoryData.nameEn.trim()],
+    carbonFactorKg: categoryData.hazardLevel === 'high' ? 3.2 : 1.9,
+    createdBy: categoryData.createdBy || 'recycler',
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await setDoc(doc(db, 'categories', safeId), payload, { merge: true });
+    return mapDocToCategory(payload, safeId);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+// Recycler: Update custom prices and accepted categories in Firestore
+export async function updateRecyclerRatesInFirestore(
+  recyclerId: string,
+  customRates: Record<string, number>,
+  acceptedCategories?: string[]
+): Promise<void> {
+  const safeId = recyclerId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `recyclers/${safeId}`;
+  try {
+    const updatePayload: Record<string, any> = {
+      customRates,
+      updatedAt: new Date().toISOString(),
+    };
+    if (acceptedCategories) {
+      updatePayload.acceptedCategories = acceptedCategories;
+    }
+    await setDoc(doc(db, 'recyclers', safeId), updatePayload, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+// Add a single recycler to Firestore
+export async function addRecyclerToFirestore(recycler: Recycler): Promise<void> {
+  const safeId = recycler.id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `recyclers/${safeId}`;
+  try {
+    await setDoc(doc(db, 'recyclers', safeId), {
+      ...recycler,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
+  }
+}
+
+// Add multiple recyclers to Firestore
+export async function addMultipleRecyclersToFirestore(recyclers: Recycler[]): Promise<void> {
+  for (const recycler of recyclers) {
+    await addRecyclerToFirestore(recycler);
+  }
 }
 
 // Save or Update User Profile in Firestore
@@ -568,24 +597,34 @@ export async function saveTransactionToFirestore(txn: Transaction, collectorId: 
   }
   const effectiveCollectorId = auth.currentUser.uid;
   const safeTxnId = txn.id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
-  const safeCatId = (txn.payload.classification.confirmedCategory || 'e_waste').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+  const safeCatId = (txn.payload?.classification?.confirmedCategory || (txn as any).categoryName || 'e_waste').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
   const path = `transactions/${safeTxnId}`;
 
   try {
     const txnDocRef = doc(db, 'transactions', safeTxnId);
+    const safeAmount = Number(txn.payload?.totalEstimatedPrice ?? (txn as any).totalAmount ?? txn.payment?.amount ?? 0);
+    const safeWeight = Number(txn.payload?.weightKg ?? (txn as any).weightKg ?? 0);
+    const safeRate = Number(txn.payload?.calculatedPricePerKg ?? (txn as any).ratePerKg ?? 0);
+    const catName = (txn.payload?.classification?.confirmedCategory || (txn as any).categoryName || 'Scrap Material').slice(0, 60);
+
     await setDoc(txnDocRef, {
       id: safeTxnId,
       collectorId: effectiveCollectorId,
-      collectorName: (txn.ledgerBlock.collectorName || 'Collector').slice(0, 100),
+      collectorName: (txn.ledgerBlock?.collectorName || 'Collector').slice(0, 100),
       categoryId: safeCatId,
-      categoryName: txn.payload.classification.confirmedCategory.slice(0, 60),
-      weightKg: Number(txn.payload.weightKg || 0),
-      ratePerKg: Number(txn.payload.calculatedPricePerKg || 0),
-      totalAmount: Number(txn.payload.totalEstimatedPrice || 0),
+      categoryName: catName,
+      weightKg: safeWeight,
+      ratePerKg: safeRate,
+      totalAmount: safeAmount,
       paymentStatus: (txn.status === 'completed' || txn.status === 'paid' ? 'verified' : 'pending') as 'pending' | 'verified' | 'failed',
-      paymentMethod: txn.payment.method,
-      timestamp: new Date(txn.timestamp).toISOString(),
+      paymentMethod: txn.payment?.method || 'upi',
+      timestamp: new Date(txn.timestamp || Date.now()).toISOString(),
       verified: true,
+      payload: txn.payload || null,
+      selectedRecycler: txn.selectedRecycler || null,
+      pickup: txn.pickup || null,
+      ledgerBlock: txn.ledgerBlock || null,
+      payment: txn.payment || null,
     }, { merge: true });
 
     // Also persist directly to waste collection in Firestore
@@ -593,19 +632,19 @@ export async function saveTransactionToFirestore(txn: Transaction, collectorId: 
     await setDoc(wasteDocRef, {
       id: safeTxnId,
       collectorId: effectiveCollectorId,
-      collectorName: (txn.ledgerBlock.collectorName || 'Collector').slice(0, 100),
+      collectorName: (txn.ledgerBlock?.collectorName || 'Collector').slice(0, 100),
       categoryId: safeCatId,
-      categoryName: txn.payload.classification.confirmedCategory.slice(0, 60),
-      weightKg: Number(txn.payload.weightKg || 0),
-      ratePerKg: Number(txn.payload.calculatedPricePerKg || 0),
-      totalAmount: Number(txn.payload.totalEstimatedPrice || 0),
-      fairAdvantageAmount: Number(txn.payload.fairAdvantageAmount || 0),
-      cleanliness: txn.payload.condition?.cleanliness || 'clean',
-      structural: txn.payload.condition?.structural || 'intact',
+      categoryName: catName,
+      weightKg: safeWeight,
+      ratePerKg: safeRate,
+      totalAmount: safeAmount,
+      fairAdvantageAmount: Number(txn.payload?.fairAdvantageAmount || 0),
+      cleanliness: txn.payload?.condition?.cleanliness || 'clean',
+      structural: txn.payload?.condition?.structural || 'intact',
       recyclerId: txn.selectedRecycler?.id || '',
       recyclerName: txn.selectedRecycler?.name || '',
       status: txn.status === 'paid' || txn.status === 'completed' ? 'paid' : 'scanned',
-      timestamp: new Date(txn.timestamp).toISOString(),
+      timestamp: new Date(txn.timestamp || Date.now()).toISOString(),
       transactionId: safeTxnId,
     }, { merge: true });
 
@@ -616,8 +655,8 @@ export async function saveTransactionToFirestore(txn: Transaction, collectorId: 
       if (userDoc.exists()) {
         const u = userDoc.data();
         await setDoc(userRef, {
-          totalEarnings: (u.totalEarnings || 0) + Number(txn.payload.totalEstimatedPrice || 0),
-          totalWasteHandledKg: (u.totalWasteHandledKg || 0) + Number(txn.payload.weightKg || 0),
+          totalEarnings: (u.totalEarnings || 0) + safeAmount,
+          totalWasteHandledKg: (u.totalWasteHandledKg || 0) + safeWeight,
           transactionsCount: (u.transactionsCount || 0) + 1,
           updatedAt: new Date().toISOString(),
         }, { merge: true });
@@ -627,6 +666,73 @@ export async function saveTransactionToFirestore(txn: Transaction, collectorId: 
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+// Subscribe to transactions for a Recycler facility in Firestore
+export function subscribeRecyclerTransactions(
+  recyclerFacilityId: string,
+  callback: (transactions: any[]) => void
+): () => void {
+  const path = 'transactions';
+  try {
+    return onSnapshot(
+      collection(db, path),
+      (snapshot) => {
+        const list: any[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data();
+          if (
+            !recyclerFacilityId ||
+            data.recyclerId === recyclerFacilityId ||
+            data.selectedRecycler?.id === recyclerFacilityId ||
+            data.payload?.selectedRecycler?.id === recyclerFacilityId
+          ) {
+            list.push(data);
+          }
+        });
+        list.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+        callback(list);
+      },
+      (error) => {
+        console.warn('Recycler transactions listener error:', error);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to subscribe recycler transactions:', err);
+    return () => {};
+  }
+}
+
+// Update Transaction Status in Firestore (e.g. accepted, rejected, verified, counter_offer)
+export async function updateTransactionStatusInFirestore(
+  transactionId: string,
+  status: string,
+  extraData?: Record<string, any>
+): Promise<void> {
+  const safeTxnId = transactionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const path = `transactions/${safeTxnId}`;
+  try {
+    const txnDocRef = doc(db, 'transactions', safeTxnId);
+    await setDoc(txnDocRef, {
+      status,
+      ...(extraData || {}),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    // Also sync status in waste collection
+    try {
+      const wasteDocRef = doc(db, 'waste', safeTxnId);
+      await setDoc(wasteDocRef, {
+        status: status === 'completed' || status === 'paid' ? 'paid' : status === 'verified_handover' ? 'verified_handover' : 'scanned',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch {
+      // optional
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    throw error;
   }
 }
 

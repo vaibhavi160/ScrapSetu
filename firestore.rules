@@ -12,6 +12,24 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserData().role
+        : null;
+    }
+
+    function isRecycler() {
+      return isSignedIn() && (getUserRole() == 'recycler' || getUserRole() == 'admin');
+    }
+
+    function isCollector() {
+      return isSignedIn() && (getUserRole() == 'collector' || getUserRole() == 'admin');
+    }
+
     // 1. Users collection (User Profiles)
     match /users/{userId} {
       allow read: if isSignedIn();
@@ -19,23 +37,35 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 2. Scrap Categories (Public rate cards & safety guidelines)
+    // 2. Scrap Categories (Public rate cards; recyclers can create and update categories)
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow create: if isSignedIn() && (isRecycler() || request.auth.token.email != null);
+      allow update: if isSignedIn() && (isRecycler() || request.auth.token.email != null);
+      allow delete: if false;
     }
 
-    // 3. Recyclers Directory (Public verified facilities & community additions)
+    // 3. Recyclers Directory (Public verified facilities; authenticated recyclers can update rates)
     match /recyclers/{recyclerId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if false;
     }
 
-    // 4. Completed Transactions
+    // 4. Completed & In-Progress Transactions
     match /transactions/{transactionId} {
-      allow read: if isSignedIn() && (resource == null || resource.data.collectorId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.collectorId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.collectorId == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource == null || 
+        resource.data.collectorId == request.auth.uid || 
+        resource.data.recyclerId == request.auth.uid ||
+        isRecycler()
+      );
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.collectorId == request.auth.uid ||
+        resource.data.recyclerId == request.auth.uid ||
+        isRecycler()
+      );
       allow delete: if false;
     }
 
@@ -48,12 +78,12 @@ service cloud.firestore {
     // 6. Waste Records (Scanned, collected & sold scrap data with collector earnings)
     match /waste/{wasteId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isSignedIn();
     }
 
     match /waste_data/{wasteId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isSignedIn();
     }
 
     // 7. Test connection / health check

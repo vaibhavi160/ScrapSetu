@@ -68,13 +68,13 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-[#DDE6E0]">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2.5">
-            <Scale className="w-6 h-6 text-[#176B45]" />
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F1A3C] flex items-center gap-2.5">
+            <Scale className="w-6 h-6 text-[#E8433D]" />
             <span>{t.enterWeight}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {language === 'hi' ? `श्रेणी: ${catInfo.nameHi}` : `Selected Stream: ${catInfo.nameEn}`}
           </p>
         </div>
@@ -82,9 +82,9 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
       </div>
 
       {/* Main Weight Input Card */}
-      <div className="bg-white rounded-2xl border border-[#DDE6E0] p-5 sm:p-6 space-y-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-6 shadow-xs">
         <div className="text-center space-y-3">
-          <span className="text-xs sm:text-sm font-semibold text-[#66736C]">
+          <span className="text-xs sm:text-sm font-semibold text-slate-500">
             {t.weightKg}
           </span>
 
@@ -93,22 +93,22 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
             <button
               id="weight-minus-btn"
               onClick={() => handleAdjustWeight(-1)}
-              className="w-14 h-14 rounded-2xl bg-[#F7F9F8] hover:bg-gray-100 border border-[#DDE6E0] text-[#17231D] flex items-center justify-center font-bold text-2xl cursor-pointer transition-colors shadow-xs"
+              className="w-14 h-14 rounded-2xl bg-[#EEF1F8] hover:bg-slate-200 border border-slate-200 text-[#0F1A3C] flex items-center justify-center font-bold text-2xl cursor-pointer transition-colors shadow-xs"
             >
               <Minus className="w-6 h-6" />
             </button>
 
-            <div className="min-w-[180px] py-3 px-6 rounded-2xl bg-[#F7F9F8] border border-[#DDE6E0] text-center shadow-inner">
-              <span className="text-4xl sm:text-5xl font-extrabold text-[#17231D] tabular-nums">
+            <div className="min-w-[180px] py-3 px-6 rounded-2xl bg-[#F8F9FD] border border-slate-200 text-center shadow-inner">
+              <span className="text-4xl sm:text-5xl font-black text-[#0F1A3C] tabular-nums">
                 {weight.toFixed(1)}
               </span>
-              <span className="text-base font-bold text-[#66736C] ml-2">kg</span>
+              <span className="text-base font-bold text-slate-500 ml-2">kg</span>
             </div>
 
             <button
               id="weight-plus-btn"
               onClick={() => handleAdjustWeight(1)}
-              className="w-14 h-14 rounded-2xl bg-[#F7F9F8] hover:bg-gray-100 border border-[#DDE6E0] text-[#17231D] flex items-center justify-center font-bold text-2xl cursor-pointer transition-colors shadow-xs"
+              className="w-14 h-14 rounded-2xl bg-[#EEF1F8] hover:bg-slate-200 border border-slate-200 text-[#0F1A3C] flex items-center justify-center font-bold text-2xl cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-6 h-6" />
             </button>
@@ -124,9 +124,9 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
               step="0.5"
               value={weight}
               onChange={handleSliderChange}
-              className="w-full h-2.5 bg-[#DDE6E0] rounded-lg appearance-none cursor-pointer accent-[#176B45]"
+              className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#E8433D]"
             />
-            <div className="flex justify-between text-xs text-[#66736C] font-medium mt-1.5">
+            <div className="flex justify-between text-xs text-slate-500 font-medium mt-1.5">
               <span>0.5 kg</span>
               <span>25 kg</span>
               <span>50 kg</span>
@@ -136,7 +136,7 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
 
           {/* Quick Add Buttons */}
           <div className="pt-2">
-            <span className="text-xs font-semibold text-[#66736C] block mb-2">
+            <span className="text-xs font-semibold text-slate-500 block mb-2">
               {t.quickAdd}:
             </span>
             <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -145,7 +145,7 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
                   key={delta}
                   id={`quick-add-${delta}`}
                   onClick={() => handleAdjustWeight(delta)}
-                  className="px-4 py-2 bg-[#EAF6EF] hover:bg-[#d8ebd0] border border-[#176B45]/20 rounded-xl text-xs font-bold text-[#176B45] cursor-pointer transition-colors shadow-xs"
+                  className="px-4 py-2 bg-[#EEF1F8] hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-[#0F1A3C] cursor-pointer transition-colors shadow-xs"
                 >
                   +{delta} kg
                 </button>
@@ -155,8 +155,8 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
         </div>
 
         {/* Condition Rating 1: Cleanliness */}
-        <div className="border-t border-[#DDE6E0] pt-4 space-y-2.5">
-          <label className="text-xs sm:text-sm font-bold text-[#17231D] flex items-center gap-2">
+        <div className="border-t border-slate-200 pt-4 space-y-2.5">
+          <label className="text-xs sm:text-sm font-bold text-[#0F1A3C] flex items-center gap-2">
             <span>{t.cleanliness}</span>
           </label>
 
@@ -170,15 +170,15 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
               }}
               className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                 cleanliness === 'clean'
-                  ? 'border-[#176B45] bg-[#EAF6EF] shadow-xs'
-                  : 'border-[#DDE6E0] hover:border-gray-300 bg-white'
+                  ? 'border-[#E8433D] bg-[#EEF1F8] shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-bold text-[#17231D]">{t.cleanSorted}</span>
-                {cleanliness === 'clean' && <Check className="w-5 h-5 text-[#16834A]" />}
+                <span className="text-xs sm:text-sm font-bold text-[#0F1A3C]">{t.cleanSorted}</span>
+                {cleanliness === 'clean' && <Check className="w-5 h-5 text-[#E8433D]" />}
               </div>
-              <p className="text-xs text-[#16834A] font-semibold mt-1">
+              <p className="text-xs text-[#E8433D] font-semibold mt-1">
                 {language === 'hi' ? 'धूल व अन्य कचरे से मुक्त (+10% बोनस)' : 'Sorted cleanly (+10% bonus)'}
               </p>
             </button>
@@ -192,15 +192,15 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
               }}
               className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                 cleanliness === 'dirty'
-                  ? 'border-[#E59A23] bg-[#FEF6E9] shadow-xs'
-                  : 'border-[#DDE6E0] hover:border-gray-300 bg-white'
+                  ? 'border-amber-400 bg-amber-50 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-bold text-[#17231D]">{t.dirtyMixed}</span>
-                {cleanliness === 'dirty' && <Check className="w-5 h-5 text-[#E59A23]" />}
+                <span className="text-xs sm:text-sm font-bold text-[#0F1A3C]">{t.dirtyMixed}</span>
+                {cleanliness === 'dirty' && <Check className="w-5 h-5 text-amber-600" />}
               </div>
-              <p className="text-xs text-[#E59A23] font-semibold mt-1">
+              <p className="text-xs text-amber-700 font-semibold mt-1">
                 {language === 'hi' ? 'मिलावट या मिट्टी युक्त' : 'Needs sorting / contaminated'}
               </p>
             </button>
@@ -209,7 +209,7 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
 
         {/* Condition Rating 2: Physical State */}
         <div className="space-y-2.5">
-          <label className="text-xs sm:text-sm font-bold text-[#17231D] flex items-center gap-2">
+          <label className="text-xs sm:text-sm font-bold text-[#0F1A3C] flex items-center gap-2">
             <span>{t.structuralCondition}</span>
           </label>
 
@@ -223,15 +223,15 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
               }}
               className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                 structural === 'intact'
-                  ? 'border-[#176B45] bg-[#EAF6EF] shadow-xs'
-                  : 'border-[#DDE6E0] hover:border-gray-300 bg-white'
+                  ? 'border-[#E8433D] bg-[#EEF1F8] shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-bold text-[#17231D]">{t.intactDry}</span>
-                {structural === 'intact' && <Check className="w-5 h-5 text-[#16834A]" />}
+                <span className="text-xs sm:text-sm font-bold text-[#0F1A3C]">{t.intactDry}</span>
+                {structural === 'intact' && <Check className="w-5 h-5 text-[#E8433D]" />}
               </div>
-              <p className="text-xs text-[#66736C] mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {language === 'hi' ? 'पूरा भाग सुरक्षित / सूखा' : 'No acid leakage / dry'}
               </p>
             </button>
@@ -245,15 +245,15 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
               }}
               className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                 structural === 'damaged'
-                  ? 'border-[#E59A23] bg-[#FEF6E9] shadow-xs'
-                  : 'border-[#DDE6E0] hover:border-gray-300 bg-white'
+                  ? 'border-amber-400 bg-amber-50 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-bold text-[#17231D]">{t.damagedCorroded}</span>
-                {structural === 'damaged' && <Check className="w-5 h-5 text-[#E59A23]" />}
+                <span className="text-xs sm:text-sm font-bold text-[#0F1A3C]">{t.damagedCorroded}</span>
+                {structural === 'damaged' && <Check className="w-5 h-5 text-amber-600" />}
               </div>
-              <p className="text-xs text-[#66736C] mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {language === 'hi' ? 'टूटा हुआ / जंग लगा' : 'Broken / corroded scrap'}
               </p>
             </button>
@@ -261,11 +261,11 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
         </div>
 
         {/* Condition Impact Banner */}
-        <div className="p-3.5 bg-[#F7F9F8] rounded-xl border border-[#DDE6E0] flex items-center justify-between text-xs sm:text-sm">
-          <span className="text-[#66736C] font-medium">
+        <div className="p-3.5 bg-[#F8F9FD] rounded-xl border border-slate-200 flex items-center justify-between text-xs sm:text-sm">
+          <span className="text-slate-500 font-medium">
             {language === 'hi' ? 'हालत अनुसार मूल्य गुणक:' : 'Condition Multiplier:'}
           </span>
-          <span className={`font-bold tabular-nums ${conditionMultiplier >= 1.0 ? 'text-[#16834A]' : 'text-[#E59A23]'}`}>
+          <span className={`font-bold tabular-nums ${conditionMultiplier >= 1.0 ? 'text-[#E8433D]' : 'text-amber-600'}`}>
             {(conditionMultiplier * 100).toFixed(0)}% {conditionMultiplier >= 1.0 ? '(+EPR Bonus)' : '(Standard)'}
           </span>
         </div>
@@ -275,7 +275,7 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
           <button
             id="weight-back-btn"
             onClick={onBack}
-            className="py-3 px-5 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
+            className="py-3 px-5 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
           >
             {t.back}
           </button>
@@ -283,7 +283,7 @@ export const Step4WeightConditionScreen: React.FC<Step4WeightConditionScreenProp
           <button
             id="weight-proceed-btn"
             onClick={handleProceed}
-            className="flex-1 py-3 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow-md transition-all"
+            className="flex-1 py-3 px-5 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E8433D]/25 transition-all"
           >
             <span>{language === 'hi' ? 'उचित मूल्य अनुमान देखें' : 'Calculate Fair Rate & Recyclers'}</span>
             <ArrowRight className="w-4 h-4" />

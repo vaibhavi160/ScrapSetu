@@ -19,9 +19,9 @@ export const ImpactDashboardModal: React.FC<ImpactDashboardModalProps> = ({
 }) => {
   const t = TRANSLATIONS[language];
 
-  const totalEarnings = transactions.reduce((acc, cur) => acc + cur.payload.totalEstimatedPrice, 0);
-  const totalWeightKg = transactions.reduce((acc, cur) => acc + cur.payload.weightKg, 0);
-  const totalExtraProfit = transactions.reduce((acc, cur) => acc + cur.payload.fairAdvantageAmount, 0);
+  const totalEarnings = transactions.reduce((acc, cur) => acc + (cur?.payload?.totalEstimatedPrice ?? (cur as any)?.totalAmount ?? (cur as any)?.payment?.amount ?? 0), 0);
+  const totalWeightKg = transactions.reduce((acc, cur) => acc + (cur?.payload?.weightKg ?? (cur as any)?.weightKg ?? 0), 0);
+  const totalExtraProfit = transactions.reduce((acc, cur) => acc + (cur?.payload?.fairAdvantageAmount ?? (cur as any)?.fairAdvantageAmount ?? 0), 0);
 
   // Carbon emissions avoided (~1.8 kg CO2e per kg e-waste / metal recycled instead of virgin mining)
   const carbonAvoidedKg = Math.round(totalWeightKg * 1.82);

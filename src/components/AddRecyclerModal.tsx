@@ -18,6 +18,8 @@ interface AddRecyclerModalProps {
 
 // Preset Indian Industrial Recycling Hubs
 const INDIAN_HUB_PRESETS = [
+  { name: 'Varanasi - Ramnagar / Gangapur Industrial Hub', lat: 25.2677, lng: 83.0298, city: 'Varanasi' },
+  { name: 'Lucknow - Amausi & Nadarganj Industrial Area', lat: 26.7606, lng: 80.8893, city: 'Lucknow' },
   { name: 'Navi Mumbai - Taloja MIDC', lat: 19.0684, lng: 73.1092, city: 'Navi Mumbai' },
   { name: 'Mumbai - Kurla Industrial Estate', lat: 19.0728, lng: 72.8826, city: 'Mumbai' },
   { name: 'Navi Mumbai - Turbhe APMC Cluster', lat: 19.0805, lng: 73.0189, city: 'Navi Mumbai' },
@@ -670,32 +672,93 @@ export const AddRecyclerModal: React.FC<AddRecyclerModalProps> = ({
               </div>
 
               {/* City & Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-3">
+                {/* Quick City Selector Chips */}
                 <div>
-                  <label className="block text-xs font-bold text-[#17231D] mb-1">
-                    City *
+                  <label className="block text-[11px] font-bold text-[#66736C] mb-1">
+                    Quick Select City / Region
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={singleCity}
-                    onChange={(e) => setSingleCity(e.target.value)}
-                    placeholder="e.g. Navi Mumbai"
-                    className="w-full bg-[#F7F9F8] border border-[#DDE6E0] rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#176B45]"
-                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { name: 'Varanasi', lat: 25.3176, lng: 82.9739 },
+                      { name: 'Lucknow', lat: 26.8467, lng: 80.9462 },
+                      { name: 'Mumbai', lat: 19.0760, lng: 72.8777 },
+                      { name: 'Delhi NCR', lat: 28.6139, lng: 77.2090 },
+                      { name: 'Pune', lat: 18.5204, lng: 73.8567 },
+                      { name: 'Bengaluru', lat: 12.9716, lng: 77.5946 },
+                      { name: 'Navi Mumbai', lat: 19.0330, lng: 73.0297 },
+                    ].map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          setSingleCity(c.name);
+                          // Auto update coordinates if current lat is still default
+                          if (Math.abs(singleLat - 19.0760) < 0.05 || singleLat === 0) {
+                            setSingleLat(c.lat);
+                            setSingleLng(c.lng);
+                          }
+                          playChime('click');
+                        }}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition-all cursor-pointer ${
+                          singleCity.toLowerCase() === c.name.toLowerCase()
+                            ? 'bg-[#176B45] text-white border-[#176B45] shadow-xs'
+                            : 'bg-[#F7F9F8] text-[#17231D] border-[#DDE6E0] hover:bg-gray-100'
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#17231D] mb-1">
-                    Street Address & Landmark *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={singleAddress}
-                    onChange={(e) => setSingleAddress(e.target.value)}
-                    placeholder="Plot 44, MIDC Industrial Area"
-                    className="w-full bg-[#F7F9F8] border border-[#DDE6E0] rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#176B45]"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#17231D] mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={singleCity}
+                      onChange={(e) => setSingleCity(e.target.value)}
+                      placeholder="e.g. Varanasi or Mumbai"
+                      className="w-full bg-[#F7F9F8] border border-[#DDE6E0] rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#176B45]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-[#17231D] mb-1">
+                      Street Address & Landmark *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={singleAddress}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSingleAddress(val);
+                        // Intelligent city auto-detection
+                        const valLower = val.toLowerCase();
+                        if (valLower.includes('varanasi') || valLower.includes('gangapur') || valLower.includes('ramnagar')) {
+                          if (singleCity === 'Mumbai' || !singleCity) setSingleCity('Varanasi');
+                          if (singleLat === 19.076 || Math.abs(singleLat - 19.076) < 0.05) {
+                            setSingleLat(25.3176);
+                            setSingleLng(82.9739);
+                          }
+                        } else if (valLower.includes('lucknow')) {
+                          if (singleCity === 'Mumbai' || !singleCity) setSingleCity('Lucknow');
+                        } else if (valLower.includes('delhi') || valLower.includes('okhla') || valLower.includes('ncr')) {
+                          if (singleCity === 'Mumbai' || !singleCity) setSingleCity('New Delhi');
+                        } else if (valLower.includes('pune') || valLower.includes('chakan')) {
+                          if (singleCity === 'Mumbai' || !singleCity) setSingleCity('Pune');
+                        } else if (valLower.includes('bengaluru') || valLower.includes('bangalore') || valLower.includes('peenya')) {
+                          if (singleCity === 'Mumbai' || !singleCity) setSingleCity('Bengaluru');
+                        }
+                      }}
+                      placeholder="Plot 44, Industrial Area / Gangapur"
+                      className="w-full bg-[#F7F9F8] border border-[#DDE6E0] rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-[#17231D] focus:outline-none focus:ring-2 focus:ring-[#176B45]"
+                    />
+                  </div>
                 </div>
               </div>
 

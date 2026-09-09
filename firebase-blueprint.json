@@ -129,6 +129,19 @@
           "type": "string",
           "description": "Facility manager name",
           "maxLength": 100
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the facility owner",
+          "maxLength": 128
+        },
+        "customRates": {
+          "type": "object",
+          "description": "Recycler customized buying rate per kg for each waste category"
+        },
+        "acceptedCategories": {
+          "type": "array",
+          "description": "List of waste category names accepted by this facility"
         }
       },
       "required": ["id", "name", "category", "ratePerKg", "isVerified"]
@@ -141,17 +154,17 @@
         "id": {
           "type": "string",
           "description": "Category identifier (e.g. copper, ewaste, cardboard)",
-          "maxLength": 40
+          "maxLength": 64
         },
         "name": {
           "type": "string",
           "description": "English name",
-          "maxLength": 60
+          "maxLength": 100
         },
         "hindiName": {
           "type": "string",
           "description": "Hindi / local dialect name",
-          "maxLength": 60
+          "maxLength": 100
         },
         "ratePerKg": {
           "type": "number",
@@ -178,6 +191,16 @@
         "carbonFactorKg": {
           "type": "number",
           "description": "CO2 emissions avoided per kg diverted"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID or Recycler Facility ID of creator",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of category creation",
+          "maxLength": 40
         }
       },
       "required": ["id", "name", "ratePerKg", "recyclable"]

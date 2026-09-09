@@ -8,7 +8,8 @@ import { TRANSLATIONS } from '../utils/translations';
 import { MOCK_RECYCLERS } from '../data/mockData';
 import { 
   calculateHaversineDistanceKm, calculateDrivingDistanceKm, 
-  calculateDrivingEtaMins, getCurrentCollectorLocation, getGoogleMapsDirectionsUrl 
+  calculateDrivingEtaMins, getCurrentCollectorLocation, getGoogleMapsDirectionsUrl,
+  formatDisplayAddress
 } from '../utils/geo';
 import { VoiceButton } from '../components/VoiceButton';
 import { playChime } from '../utils/audioSpeech';
@@ -72,7 +73,11 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
     const straightKm = calculateHaversineDistanceKm(collectorLoc.lat, collectorLoc.lng, r.lat, r.lng);
     const drivingKm = calculateDrivingDistanceKm(straightKm);
     const drivingEta = calculateDrivingEtaMins(drivingKm);
-    const offeredPricePerKg = Math.round(calculatedPricePerKg * (r.priceMultiplier || 1.05) * 10) / 10;
+    // Use recycler's specific custom rate for this category if configured
+    const customRateForCategory = r.customRates?.[category];
+    const offeredPricePerKg = typeof customRateForCategory === 'number' && customRateForCategory > 0
+      ? customRateForCategory
+      : Math.round(calculatedPricePerKg * (r.priceMultiplier || 1.05) * 10) / 10;
     const totalOffered = Math.round(offeredPricePerKg * weightKg);
 
     return {
@@ -132,19 +137,19 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DDE6E0]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#17231D] flex items-center gap-2">
-              <MapPin className="w-6 h-6 text-[#176B45]" />
+            <h2 className="text-xl sm:text-2xl font-black text-[#0F1A3C] flex items-center gap-2">
+              <MapPin className="w-6 h-6 text-[#E8433D]" />
               <span>{t.compareRecyclers}</span>
             </h2>
-            <span className="text-xs bg-[#E8F3ED] text-[#176B45] font-black px-2.5 py-0.5 rounded-full border border-[#C5E1D1]">
+            <span className="text-xs bg-[#EEF1F8] text-[#0F1A3C] font-black px-2.5 py-0.5 rounded-full border border-slate-200">
               Google Maps & Firebase Synced ({sortedRecyclers.length})
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#66736C] mt-1">
-            {t.nearYou} <strong className="text-[#176B45] font-semibold">{category}</strong> ({sortedRecyclers.length} {language === 'hi' ? 'सुविधाएं उपलब्ध' : 'facilities available'})
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {t.nearYou} <strong className="text-[#E8433D] font-bold">{category}</strong> ({sortedRecyclers.length} {language === 'hi' ? 'सुविधाएं उपलब्ध' : 'facilities available'})
           </p>
         </div>
 
@@ -156,7 +161,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
               playChime('click');
               setIsAddModalOpen(true);
             }}
-            className="bg-[#176B45] hover:bg-[#125335] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
+            className="bg-[#0F1A3C] hover:bg-[#1A2855] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
           >
             <Plus className="w-4 h-4" />
             <span>{language === 'hi' ? '+ रीसाइक्लर जोड़ें' : '+ Add Recycler(s)'}</span>
@@ -166,15 +171,15 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
       </div>
 
       {/* View Switcher: Live Map vs Low-Bandwidth List */}
-      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-[#DDE6E0] shadow-xs flex-wrap gap-2">
-        <div className="inline-flex rounded-xl bg-[#F7F9F8] p-1 text-xs sm:text-sm font-bold border border-[#DDE6E0]">
+      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-xs flex-wrap gap-2">
+        <div className="inline-flex rounded-xl bg-[#EEF1F8] p-1 text-xs sm:text-sm font-bold border border-slate-200">
           <button
             id="tab-map-view"
             onClick={() => setActiveTab('map')}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'map'
-                ? 'bg-[#176B45] text-white shadow-xs'
-                : 'text-[#66736C] hover:text-[#17231D]'
+                ? 'bg-[#0F1A3C] text-white shadow-xs'
+                : 'text-slate-600 hover:text-[#0F1A3C]'
             }`}
           >
             <Navigation className="w-4 h-4" />
@@ -185,8 +190,8 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
             onClick={() => setActiveTab('list')}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'list'
-                ? 'bg-[#176B45] text-white shadow-xs'
-                : 'text-[#66736C] hover:text-[#17231D]'
+                ? 'bg-[#0F1A3C] text-white shadow-xs'
+                : 'text-slate-600 hover:text-[#0F1A3C]'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -196,12 +201,12 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
 
         {/* Sort selector */}
         <div className="flex items-center gap-1.5 text-xs sm:text-sm px-2">
-          <ArrowUpDown className="w-4 h-4 text-[#66736C]" />
+          <ArrowUpDown className="w-4 h-4 text-slate-500" />
           <select
             id="sort-recyclers-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-[#F7F9F8] font-bold text-[#17231D] text-xs sm:text-sm py-1.5 px-2.5 rounded-lg border border-[#DDE6E0] focus:ring-1 focus:ring-[#176B45] cursor-pointer"
+            className="bg-[#EEF1F8] font-bold text-[#0F1A3C] text-xs sm:text-sm py-1.5 px-2.5 rounded-lg border border-slate-200 focus:ring-1 focus:ring-[#E8433D] cursor-pointer"
           >
             <option value="distance">{t.sortDistance}</option>
             <option value="price">{t.sortPrice}</option>
@@ -232,11 +237,11 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
 
           {/* Active Recycler Card */}
           {activeRecycler && (
-            <div className="bg-white rounded-2xl border-2 border-[#176B45] p-5 sm:p-6 space-y-4 shadow-sm">
+            <div className="bg-white rounded-2xl border-2 border-[#0F1A3C] p-5 sm:p-6 space-y-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-extrabold text-base sm:text-lg text-[#17231D]">
+                    <h3 className="font-black text-base sm:text-lg text-[#0F1A3C]">
                       {activeRecycler.name}
                     </h3>
                     {activeRecycler.spcbCertified && (
@@ -251,16 +256,16 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-[#66736C] mt-0.5">
-                    {activeRecycler.address}, {activeRecycler.city}
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    {formatDisplayAddress(activeRecycler.address, activeRecycler.city)}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-[#66736C] mt-1 flex-wrap">
-                    <span className="font-mono text-[#176B45] font-semibold">
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                    <span className="font-mono text-[#0F1A3C] bg-[#EEF1F8] px-2 py-0.5 rounded-md font-semibold">
                       {activeRecycler.cpcbRegNumber}
                     </span>
                     {activeRecycler.phone && (
-                      <span className="flex items-center gap-1 font-medium text-[#17231D]">
-                        <Phone className="w-3 h-3 text-[#176B45]" />
+                      <span className="flex items-center gap-1 font-medium text-[#0F1A3C]">
+                        <Phone className="w-3 h-3 text-[#E8433D]" />
                         {activeRecycler.phone}
                       </span>
                     )}
@@ -268,10 +273,10 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-xl sm:text-2xl font-extrabold text-[#176B45] tabular-nums">
+                  <div className="text-xl sm:text-2xl font-black text-[#E8433D] tabular-nums">
                     ₹{activeRecycler.totalOffered}
                   </div>
-                  <span className="text-xs text-[#66736C] block tabular-nums">
+                  <span className="text-xs text-slate-500 block tabular-nums">
                     (₹{activeRecycler.offeredPricePerKg}/kg)
                   </span>
                 </div>
@@ -279,17 +284,17 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
 
               {/* Badges Row: Distance, ETA, Pickup */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
-                <div className="p-2.5 rounded-xl bg-[#F7F9F8] border border-[#DDE6E0]">
-                  <span className="text-xs text-[#66736C] block">{t.sortDistance}</span>
-                  <span className="font-bold text-[#17231D] tabular-nums">{activeRecycler.distanceKm} km</span>
+                <div className="p-2.5 rounded-xl bg-[#F8F9FD] border border-slate-200">
+                  <span className="text-xs text-slate-500 block">{t.sortDistance}</span>
+                  <span className="font-bold text-[#0F1A3C] tabular-nums">{activeRecycler.distanceKm} km</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-[#F7F9F8] border border-[#DDE6E0]">
-                  <span className="text-xs text-[#66736C] block">Drive ETA</span>
-                  <span className="font-bold text-[#17231D] tabular-nums">{activeRecycler.drivingEtaMins} mins</span>
+                <div className="p-2.5 rounded-xl bg-[#F8F9FD] border border-slate-200">
+                  <span className="text-xs text-slate-500 block">Drive ETA</span>
+                  <span className="font-bold text-[#0F1A3C] tabular-nums">{activeRecycler.drivingEtaMins} mins</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-[#F7F9F8] border border-[#DDE6E0]">
-                  <span className="text-xs text-[#66736C] block">Pickup</span>
-                  <span className="font-bold text-[#176B45]">
+                <div className="p-2.5 rounded-xl bg-[#F8F9FD] border border-slate-200">
+                  <span className="text-xs text-slate-500 block">Pickup</span>
+                  <span className="font-bold text-[#E8433D]">
                     {activeRecycler.pickupAvailable ? 'Doorstep' : 'Depot'}
                   </span>
                 </div>
@@ -302,17 +307,17 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                   href={getGoogleMapsDirectionsUrl(activeRecycler.lat, activeRecycler.lng, activeRecycler.name)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-3 px-4 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                  className="py-3 px-4 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                 >
                   <Navigation className="w-4 h-4 text-blue-700" />
                   <span>{t.getDirections}</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-[#66736C]" />
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
                 </a>
 
                 <button
                   id="btn-select-active-recycler"
                   onClick={() => handleProceedWithRecycler(activeRecycler)}
-                  className="flex-1 py-3 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow-md transition-all"
+                  className="flex-1 py-3 px-5 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E8433D]/25 transition-all"
                 >
                   <span>{language === 'hi' ? 'यह रिसाइकलर चुनें' : 'Choose This Recycler'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -335,50 +340,50 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                 key={rec.id}
                 id={`recycler-card-${rec.id}`}
                 className={`p-4 sm:p-5 rounded-2xl border bg-white space-y-3 transition-all shadow-xs ${
-                  isSelected ? 'border-2 border-[#176B45]' : 'border-[#DDE6E0]'
+                  isSelected ? 'border-2 border-[#0F1A3C] ring-2 ring-[#0F1A3C]/10' : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-extrabold text-sm sm:text-base text-[#17231D]">{rec.name}</h4>
-                      <ShieldCheck className="w-4 h-4 text-[#16834A]" />
+                      <h4 className="font-black text-sm sm:text-base text-[#0F1A3C]">{rec.name}</h4>
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
                       {rec.priceMultiplier > 1 && (
                         <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-black">
                           +{Math.round((rec.priceMultiplier - 1) * 100)}% Premium
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[#66736C] mt-0.5">{rec.address}, {rec.city}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{formatDisplayAddress(rec.address, rec.city)}</p>
                     <div className="flex items-center gap-3 text-[11px] mt-1 flex-wrap">
-                      <span className="font-mono text-[#176B45] bg-[#EAF6EF] px-2 py-0.5 rounded-md font-semibold">
+                      <span className="font-mono text-[#0F1A3C] bg-[#EEF1F8] px-2 py-0.5 rounded-md font-semibold">
                         {rec.cpcbRegNumber}
                       </span>
                       {rec.phone && (
-                        <span className="text-gray-600 font-medium">📞 {rec.phone}</span>
+                        <span className="text-slate-600 font-medium">📞 {rec.phone}</span>
                       )}
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-lg sm:text-xl font-extrabold text-[#176B45] tabular-nums">
+                    <div className="text-lg sm:text-xl font-black text-[#E8433D] tabular-nums">
                       ₹{rec.totalOffered}
                     </div>
-                    <span className="text-xs text-[#66736C] tabular-nums">
+                    <span className="text-xs text-slate-500 tabular-nums">
                       ₹{rec.offeredPricePerKg}/kg
                     </span>
                   </div>
                 </div>
 
                 {/* Metrics */}
-                <div className="flex items-center justify-between text-xs sm:text-sm text-[#66736C] pt-2 border-t border-[#DDE6E0]">
+                <div className="flex items-center justify-between text-xs sm:text-sm text-slate-500 pt-2 border-t border-slate-200">
                   <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                     <span className="flex items-center gap-1">
-                      <Navigation className="w-3.5 h-3.5 text-[#66736C]" />
+                      <Navigation className="w-3.5 h-3.5 text-slate-400" />
                       <span className="tabular-nums">{rec.distanceKm} km ({rec.drivingEtaMins} min)</span>
                     </span>
                     <span className="flex items-center gap-1">
-                      <Truck className="w-3.5 h-3.5 text-[#66736C]" />
+                      <Truck className="w-3.5 h-3.5 text-slate-400" />
                       <span>{rec.pickupAvailable ? 'Doorstep pickup' : 'Drop-off'}</span>
                     </span>
                   </div>
@@ -388,8 +393,8 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                     onClick={(e) => handleToggleCompare(rec.id, e)}
                     className={`text-xs font-bold px-3 py-1 rounded-full border transition-colors cursor-pointer ${
                       isCompared
-                        ? 'bg-[#EAF6EF] text-[#176B45] border-[#176B45]'
-                        : 'bg-[#F7F9F8] text-[#17231D] border-[#DDE6E0] hover:bg-gray-100'
+                        ? 'bg-[#EEF1F8] text-[#E8433D] border-[#E8433D]'
+                        : 'bg-[#F8F9FD] text-[#0F1A3C] border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {isCompared ? '✓ Selected' : '+ Compare'}
@@ -402,7 +407,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                     href={getGoogleMapsDirectionsUrl(rec.lat, rec.lng, rec.name)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3 bg-[#F7F9F8] rounded-xl text-[#17231D] border border-[#DDE6E0] hover:bg-gray-100 transition-colors"
+                    className="p-3 bg-[#EEF1F8] rounded-xl text-[#0F1A3C] border border-slate-200 hover:bg-slate-200 transition-colors"
                     title="Google Maps Navigation"
                   >
                     <Navigation className="w-4 h-4 text-blue-700" />
@@ -411,7 +416,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                   <button
                     id={`btn-select-list-${rec.id}`}
                     onClick={() => handleProceedWithRecycler(rec)}
-                    className="flex-1 py-3 px-4 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                    className="flex-1 py-3 px-4 bg-[#E8433D] hover:bg-[#D32F2F] text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#E8433D]/25 transition-colors"
                   >
                     <span>{language === 'hi' ? 'यह ऑफर चुनें' : 'Select Offer & Schedule Pickup'}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -429,10 +434,10 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
           <button
             id="btn-open-compare-modal"
             onClick={() => setShowCompareModal(true)}
-            className="w-full py-3 px-5 bg-[#176B45] hover:bg-[#238B5A] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-xl flex items-center justify-between cursor-pointer transition-all"
+            className="w-full py-3 px-5 bg-[#0F1A3C] hover:bg-[#1A2855] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-xl flex items-center justify-between cursor-pointer transition-all"
           >
             <div className="flex items-center gap-2.5">
-              <Layers className="w-5 h-5" />
+              <Layers className="w-5 h-5 text-[#E8433D]" />
               <span>{t.compareSelected} ({compareIds.length} Recyclers)</span>
             </div>
             <span className="bg-white/20 px-3 py-1 rounded-full text-xs">View Side-by-Side</span>
@@ -452,15 +457,15 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
       {/* Side-by-Side Recycler Comparison Modal */}
       {showCompareModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl border border-[#DDE6E0]">
-            <div className="flex items-center justify-between border-b border-[#DDE6E0] pb-3">
-              <h3 className="font-extrabold text-base sm:text-lg text-[#17231D] flex items-center gap-2">
-                <Layers className="w-5 h-5 text-[#176B45]" />
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-5 sm:p-6 space-y-5 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="font-black text-base sm:text-lg text-[#0F1A3C] flex items-center gap-2">
+                <Layers className="w-5 h-5 text-[#E8433D]" />
                 <span>Side-by-Side Recycler Comparison</span>
               </h3>
               <button
                 onClick={() => setShowCompareModal(false)}
-                className="w-8 h-8 rounded-full bg-[#F7F9F8] hover:bg-gray-100 flex items-center justify-center text-[#17231D] border border-[#DDE6E0] cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-full bg-[#EEF1F8] hover:bg-slate-200 flex items-center justify-center text-[#0F1A3C] border border-slate-200 cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -473,36 +478,36 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                 if (!rec) return null;
 
                 return (
-                  <div key={rec.id} className="border border-[#DDE6E0] rounded-xl p-4 bg-[#F7F9F8] space-y-3">
+                  <div key={rec.id} className="border border-slate-200 rounded-xl p-4 bg-[#F8F9FD] space-y-3">
                     <div>
-                      <h4 className="font-bold text-[#17231D] text-xs sm:text-sm truncate">{rec.name}</h4>
-                      <p className="text-[11px] text-[#66736C] font-mono mt-0.5">{rec.cpcbRegNumber}</p>
+                      <h4 className="font-bold text-[#0F1A3C] text-xs sm:text-sm truncate">{rec.name}</h4>
+                      <p className="text-[11px] text-slate-500 font-mono mt-0.5">{rec.cpcbRegNumber}</p>
                     </div>
 
-                    <div className="bg-white p-3 rounded-xl border border-[#DDE6E0] text-center shadow-xs">
-                      <span className="text-xs text-[#66736C] block">Total Offer</span>
-                      <span className="text-xl font-extrabold text-[#176B45] tabular-nums">₹{rec.totalOffered}</span>
-                      <span className="text-xs text-[#66736C] block tabular-nums">₹{rec.offeredPricePerKg}/kg</span>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-xs">
+                      <span className="text-xs text-slate-500 block">Total Offer</span>
+                      <span className="text-xl font-black text-[#E8433D] tabular-nums">₹{rec.totalOffered}</span>
+                      <span className="text-xs text-slate-500 block tabular-nums">₹{rec.offeredPricePerKg}/kg</span>
                     </div>
 
                     <div className="space-y-1.5 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-[#66736C]">Distance:</span>
-                        <span className="font-bold tabular-nums text-[#17231D]">{rec.distanceKm} km</span>
+                        <span className="text-slate-500">Distance:</span>
+                        <span className="font-bold tabular-nums text-[#0F1A3C]">{rec.distanceKm} km</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#66736C]">Drive ETA:</span>
-                        <span className="font-bold tabular-nums text-[#17231D]">{rec.drivingEtaMins} min</span>
+                        <span className="text-slate-500">Drive ETA:</span>
+                        <span className="font-bold tabular-nums text-[#0F1A3C]">{rec.drivingEtaMins} min</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#66736C]">Pickup:</span>
-                        <span className="font-bold text-[#16834A]">
+                        <span className="text-slate-500">Pickup:</span>
+                        <span className="font-bold text-[#E8433D]">
                           {rec.pickupAvailable ? 'Doorstep' : 'Depot'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#66736C]">Rating:</span>
-                        <span className="font-bold text-[#E59A23] tabular-nums">★ {rec.rating}</span>
+                        <span className="text-slate-500">Rating:</span>
+                        <span className="font-bold text-amber-500 tabular-nums">★ {rec.rating}</span>
                       </div>
                     </div>
 
@@ -511,7 +516,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
                         setShowCompareModal(false);
                         handleProceedWithRecycler(rec);
                       }}
-                      className="w-full py-2.5 bg-[#176B45] text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-[#238B5A] cursor-pointer shadow-xs transition-colors"
+                      className="w-full py-2.5 bg-[#E8433D] text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-[#D32F2F] cursor-pointer shadow-md shadow-[#E8433D]/25 transition-colors"
                     >
                       Choose This
                     </button>
@@ -528,7 +533,7 @@ export const Step6RecyclerMapScreen: React.FC<Step6RecyclerMapScreenProps> = ({
         <button
           id="recyclers-back-btn"
           onClick={onBack}
-          className="w-full py-3 px-5 bg-[#F7F9F8] hover:bg-gray-100 text-[#17231D] border border-[#DDE6E0] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
+          className="w-full py-3 px-5 bg-[#EEF1F8] hover:bg-slate-200 text-[#0F1A3C] border border-slate-200 rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors"
         >
           {t.back}
         </button>
