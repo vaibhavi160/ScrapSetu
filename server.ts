@@ -64,6 +64,18 @@ const VALID_CATEGORIES = [
 async function startServer() {
   const app = express();
 
+  // Enable CORS for mobile APKs (Capacitor/WebView) and remote clients
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+      return;
+    }
+    next();
+  });
+
   // Allow larger payload for camera base64 images
   app.use(express.json({ limit: '30mb' }));
   app.use(express.urlencoded({ extended: true, limit: '30mb' }));
@@ -129,10 +141,15 @@ async function startServer() {
         };
 
         const promptText = `
-You are an expert scrap metal, electronic waste, and recyclable materials inspector for ScrapSetu / Kabadiwala Connect in India, adhering strictly to CPCB (Central Pollution Control Board) E-Waste (Management) Rules, 2022.
+You are an expert waste and recyclable materials inspector for ScrapSetu / Kabadiwala Connect in India.
+ScrapSetu inspects and evaluates BOTH everyday household/commercial recyclable scrap (plastic bottles, containers, glass, paper, cardboard, scrap metal) AND electronic/electrical waste.
 
-Carefully examine this photo of waste/scrap material and classify it into ONE of these exact categories:
-- "PCBs & Circuit Boards" (green/blue computer circuit boards, motherboards, RAM, telecom server cards)
+Carefully examine this photo and classify it into EXACTLY ONE of the following categories:
+- "Plastic" (PET plastic water/soda bottles, milk jugs, HDPE containers, plastic buckets, PVC/PP scrap)
+- "Glass" (glass bottles, beverage bottles, glass jars, glass panes)
+- "Paper/Cardboard" (corrugated cardboard boxes, cartons, newspapers, books, office paper raddi)
+- "Metal" (iron rods, steel sheet metal, tin/aluminum beverage cans, brass, copper scrap)
+- "PCBs & Circuit Boards" (green/blue computer circuit boards, motherboards, RAM, telecom server cards ONLY)
 - "Lithium-ion & Batteries" (phone/laptop batteries, cylindrical 18650 cells, lead-acid inverter batteries)
 - "Copper Wire & Motors" (stripped copper, PVC insulated wires, fan/cooler/pump electric motors, transformers)
 - "Smartphones & Tablets" (mobile phones, touchscreens, keypads, damaged tablets)
@@ -142,20 +159,22 @@ Carefully examine this photo of waste/scrap material and classify it into ONE of
 - "Small Home Appliances" (irons, mixers, blenders, kettles, toasters, chargers, adapters)
 - "Fluorescent & LED Lighting" (tubelights, CFLs, mercury vapor bulbs, LED drivers)
 - "Solar PV Panels & Inverters" (solar panels, inverters, charge controllers)
-- "Metal" (iron, steel pipes, scrap sheet metal, tin, aluminum frames, brass)
-- "Plastic" (PET bottles, HDPE containers, hard plastic covers, bucket scrap)
-- "Paper/Cardboard" (corrugated boxes, cardboard sheets, newspapers)
-- "Glass" (glass bottles, broken panes, jars)
 - "Mixed/Other" (mixed unsegregated scrap or unidentified materials)
 
+CRITICAL ACCURACY RULES:
+1. BOTTLE RULE: Any plastic bottle (mineral water bottle, Coke/Pepsi bottle, shampoo/oil bottle, plastic jar) MUST be classified as "Plastic". NEVER classify a bottle as "PCBs & Circuit Boards"!
+2. GLASS RULE: Any glass bottle, beer bottle, or glass container MUST be classified as "Glass".
+3. PCB RULE: ONLY classify as "PCBs & Circuit Boards" if the item clearly contains an electronic circuit board with green/blue substrate, soldered chips, and microelectronics.
+4. If you see a bottle, container, bucket, or plastic item, it is "Plastic" or "Glass", NEVER a PCB!
+
 Also:
-1. Identify the exact specific item in English (detectedItemName) and Hindi in Devanagari script (detectedItemNameHi).
-2. Rate confidence (0.0 to 1.0). If you are not completely sure (or the image is blurry/ambiguous), set isUncertain to true and confidence <= 0.65.
+1. Identify the exact specific item in English (detectedItemName) and Hindi in Devanagari script (detectedItemNameHi). Example: "Bisleri Plastic Water Bottle" / "प्लास्टिक पानी की बोतल (PET)".
+2. Rate confidence (0.0 to 1.0). If the image is blurry or unclear, set isUncertain to true and confidence <= 0.65.
 3. Identify secondaryCategory and secondaryConfidence.
-4. Estimate standard weight in kg (estimatedWeightKg) based on typical physical dimensions of such scrap.
+4. Estimate realistic standard weight in kg (estimatedWeightKg). For a plastic bottle, typically 0.05 to 0.5 kg.
 5. Determine physical condition: structural ("intact" or "damaged") and cleanliness ("clean" or "dirty").
-6. List key recovered recyclable components (materials) and any toxic/hazardous elements (hazardousElements, e.g. Lead, Mercury, Acid, Lithium).
-7. Provide crucial safety handling guidance in English and Hindi for informal waste pickers (kabadiwalas) handling this scrap.
+6. List key recovered recyclable components (materials) and any toxic/hazardous elements (hazardousElements).
+7. Provide safety handling guidance in English and Hindi for informal waste pickers (kabadiwalas).
 `;
 
         const responseSchema = {
@@ -163,7 +182,7 @@ Also:
           properties: {
             category: {
               type: Type.STRING,
-              description: 'One of the official CPCB categories',
+              description: 'Must be one of the listed categories: Plastic, Glass, Paper/Cardboard, Metal, PCBs & Circuit Boards, Lithium-ion & Batteries, Copper Wire & Motors, Smartphones & Tablets, Laptops & Computers, Displays & CRT Monitors, Large White Goods & ACs, Small Home Appliances, Fluorescent & LED Lighting, Solar PV Panels & Inverters, Mixed/Other',
             },
             confidence: {
               type: Type.NUMBER,
@@ -171,15 +190,15 @@ Also:
             },
             detectedItemName: {
               type: Type.STRING,
-              description: 'Specific identified item name in English',
+              description: 'Specific identified item name in English (e.g. Plastic Water Bottle)',
             },
             detectedItemNameHi: {
               type: Type.STRING,
-              description: 'Specific identified item name in Hindi',
+              description: 'Specific identified item name in Hindi (e.g. प्लास्टिक पानी की बोतल)',
             },
             secondaryCategory: {
               type: Type.STRING,
-              description: 'Next likely CPCB category',
+              description: 'Next likely category',
             },
             secondaryConfidence: {
               type: Type.NUMBER,
@@ -234,6 +253,7 @@ Also:
         };
 
         // Try candidate models sequentially to seamlessly absorb spikes in demand
+        const CANDIDATE_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
         for (const modelName of CANDIDATE_MODELS) {
           try {
             const response = await ai.models.generateContent({
@@ -251,36 +271,92 @@ Also:
             if (rawText) {
               const parsed = JSON.parse(rawText);
 
-              // Ensure category is valid or maps cleanly
+              // Disambiguation and validation
               let category = parsed.category;
-              if (!VALID_CATEGORIES.includes(category)) {
+              const detectedLower = (parsed.detectedItemName || '').toLowerCase();
+              const detectedHi = (parsed.detectedItemNameHi || '').toLowerCase();
+              const catLower = (category || '').toLowerCase();
+
+              // Explicit bottle/plastic safeguard: bottles must ALWAYS be Plastic or Glass, never PCB
+              const isBottleOrContainer =
+                detectedLower.includes('bottle') ||
+                detectedLower.includes('pet ') ||
+                detectedLower.includes('jug') ||
+                detectedLower.includes('shampoo') ||
+                detectedLower.includes('container') ||
+                detectedLower.includes('canister') ||
+                detectedLower.includes('bucket') ||
+                detectedHi.includes('बोतल') ||
+                detectedHi.includes('बॉटल') ||
+                catLower.includes('bottle');
+
+              const isGlassSpecific =
+                detectedLower.includes('glass') ||
+                detectedLower.includes('cullet') ||
+                detectedHi.includes('कांच') ||
+                detectedHi.includes('शीशा') ||
+                catLower.includes('glass');
+
+              const isCardboardOrPaper =
+                detectedLower.includes('cardboard') ||
+                detectedLower.includes('carton') ||
+                detectedLower.includes('paper') ||
+                detectedLower.includes('newspaper') ||
+                detectedLower.includes('box') ||
+                detectedHi.includes('गत्ता') ||
+                detectedHi.includes('कागज') ||
+                detectedHi.includes('रद्दी') ||
+                catLower.includes('cardboard') ||
+                catLower.includes('paper');
+
+              const isMetalSpecific =
+                (detectedLower.includes('metal') ||
+                 detectedLower.includes('steel') ||
+                 detectedLower.includes('iron') ||
+                 detectedLower.includes('aluminum') ||
+                 detectedLower.includes('tin can') ||
+                 detectedHi.includes('लोहा') ||
+                 detectedHi.includes('टीन')) &&
+                !detectedLower.includes('circuit') &&
+                !detectedLower.includes('pcb');
+
+              if (isBottleOrContainer) {
+                category = isGlassSpecific ? 'Glass' : 'Plastic';
+              } else if (isGlassSpecific) {
+                category = 'Glass';
+              } else if (isCardboardOrPaper) {
+                category = 'Paper/Cardboard';
+              } else if (isMetalSpecific) {
+                category = 'Metal';
+              } else if (!VALID_CATEGORIES.includes(category)) {
                 // Fuzzy map
-                const lower = (category || '').toLowerCase();
-                if (lower.includes('circuit') || lower.includes('pcb') || lower.includes('board')) {
+                if (catLower.includes('circuit') || catLower.includes('pcb') || catLower.includes('motherboard')) {
                   category = 'PCBs & Circuit Boards';
-                } else if (lower.includes('battery') || lower.includes('lithium') || lower.includes('cell')) {
+                } else if (catLower.includes('battery') || catLower.includes('lithium') || catLower.includes('cell')) {
                   category = 'Lithium-ion & Batteries';
-                } else if (lower.includes('copper') || lower.includes('wire') || lower.includes('cable') || lower.includes('motor')) {
+                } else if (catLower.includes('copper') || catLower.includes('wire') || catLower.includes('cable') || catLower.includes('motor')) {
                   category = 'Copper Wire & Motors';
-                } else if (lower.includes('phone') || lower.includes('tablet') || lower.includes('mobile')) {
+                } else if (catLower.includes('phone') || catLower.includes('tablet') || catLower.includes('mobile')) {
                   category = 'Smartphones & Tablets';
-                } else if (lower.includes('laptop') || lower.includes('computer') || lower.includes('cpu')) {
+                } else if (catLower.includes('laptop') || catLower.includes('computer') || catLower.includes('cpu')) {
                   category = 'Laptops & Computers';
-                } else if (lower.includes('monitor') || lower.includes('display') || lower.includes('screen') || lower.includes('crt')) {
+                } else if (catLower.includes('monitor') || catLower.includes('display') || catLower.includes('screen') || catLower.includes('crt')) {
                   category = 'Displays & CRT Monitors';
-                } else if (lower.includes('ac') || lower.includes('fridge') || lower.includes('white good') || lower.includes('washing')) {
+                } else if (catLower.includes('ac') || catLower.includes('fridge') || catLower.includes('white good') || catLower.includes('washing')) {
                   category = 'Large White Goods & ACs';
-                } else if (lower.includes('appliance') || lower.includes('iron') || lower.includes('mixer') || lower.includes('kettle')) {
+                } else if (catLower.includes('appliance') || catLower.includes('iron') || catLower.includes('mixer') || catLower.includes('kettle')) {
                   category = 'Small Home Appliances';
-                } else if (lower.includes('light') || lower.includes('bulb') || lower.includes('tube') || lower.includes('cfl')) {
+                } else if (catLower.includes('light') || catLower.includes('bulb') || catLower.includes('tube') || catLower.includes('cfl')) {
                   category = 'Fluorescent & LED Lighting';
-                } else if (lower.includes('solar') || lower.includes('panel') || lower.includes('inverter')) {
+                } else if (catLower.includes('solar') || catLower.includes('panel') || catLower.includes('inverter')) {
                   category = 'Solar PV Panels & Inverters';
-                } else if (lower.includes('plastic') || lower.includes('bottle')) {
+                } else if (catLower.includes('plastic')) {
                   category = 'Plastic';
-                } else if (lower.includes('paper') || lower.includes('cardboard') || lower.includes('box')) {
+                } else if (catLower.includes('glass')) {
+                  category = 'Glass';
+                } else if (catLower.includes('paper') || catLower.includes('cardboard')) {
                   category = 'Paper/Cardboard';
-                } else if (lower.includes('metal') || lower.includes('steel') || lower.includes('iron')) {
+                } else if (catLower.includes('metal') || catLower.includes('steel') || catLower.includes('iron')) {
                   category = 'Metal';
                 } else {
                   category = 'Mixed/Other';
@@ -329,12 +405,12 @@ Also:
 
       // Fallback if no Gemini key or rate limited / offline
       // Inspect presetIndex or URL or simple heuristic
-      let fallbackCat = 'Copper Wire & Motors';
-      let confidence = 0.82;
-      let itemName = 'Copper Wire and Electric Scrap';
-      let itemNameHi = 'तांबे का तार और बिजली कबाड़';
+      let fallbackCat = 'Plastic';
+      let confidence = 0.85;
+      let itemName = 'Plastic Scrap (PET / HDPE)';
+      let itemNameHi = 'प्लास्टिक कबाड़ (बोतलें व डिब्बे)';
       let isUncertain = false;
-      let weight = 6.5;
+      let weight = 2.5;
 
       if (typeof presetIndex === 'number') {
         const presets = [
@@ -343,20 +419,24 @@ Also:
           { cat: 'Copper Wire & Motors', name: 'Stripped Bright Copper Wires', nameHi: 'चमकीले तांबे के तार', conf: 0.89, wt: 12.0 },
           { cat: 'Smartphones & Tablets', name: 'Smartphones & Feature Mobiles', nameHi: 'स्मार्टफोन और मोबाइल फोन', conf: 0.93, wt: 6.2 },
           { cat: 'Laptops & Computers', name: 'Laptops & Desktop Components', nameHi: 'लैपटॉप और कंप्यूटर पुर्जे', conf: 0.88, wt: 14.0 },
+          { cat: 'Plastic', name: 'PET Plastic Water & Soda Bottles', nameHi: 'प्लास्टिक की पानी व कोल्ड्रिंक की बोतलें (PET)', conf: 0.94, wt: 4.5 },
+          { cat: 'Glass', name: 'Glass Beverage Bottles & Jars', nameHi: 'कांच की बोतलें एवं शीशे के जार', conf: 0.92, wt: 8.0 },
+          { cat: 'Paper/Cardboard', name: 'Corrugated Cardboard Box Scrap', nameHi: 'गत्ता कार्टन एवं रद्दी पेपर', conf: 0.91, wt: 15.0 },
           { cat: 'Small Home Appliances', name: 'Mixed Electrical Scrap', nameHi: 'मिश्रित घरेलू बिजली कबाड़', conf: 0.58, wt: 11.5, uncertain: true },
         ];
-        const p = presets[presetIndex] || presets[0];
+        const p = presets[presetIndex] || presets[5]; // Default to plastic bottle preset if out of bounds
         fallbackCat = p.cat;
         confidence = p.conf;
         itemName = p.name;
         itemNameHi = p.nameHi;
-        isUncertain = Boolean(p.uncertain);
+        isUncertain = Boolean((p as any).uncertain);
         weight = p.wt;
       } else if (image.includes('518770660439')) {
         fallbackCat = 'PCBs & Circuit Boards';
         confidence = 0.95;
         itemName = 'High-Grade Telecom PCB Motherboard';
         itemNameHi = 'हाई-ग्रेड टेलीकॉम पीसीबी मदरबोर्ड';
+        weight = 8.5;
       } else if (image.includes('598425237654')) {
         fallbackCat = 'Lithium-ion & Batteries';
         confidence = 0.92;
@@ -381,13 +461,32 @@ Also:
         itemName = 'IT Hardware & Laptop Scrap';
         itemNameHi = 'लैपटॉप एवं कंप्यूटर स्क्रैप';
         weight = 12.0;
+      } else if (image.includes('bottle') || image.includes('plastic') || image.includes('pet')) {
+        fallbackCat = 'Plastic';
+        confidence = 0.92;
+        itemName = 'Plastic Bottles & Containers';
+        itemNameHi = 'प्लास्टिक की बोतलें और कंटेनर';
+        weight = 3.0;
+      } else if (image.includes('glass')) {
+        fallbackCat = 'Glass';
+        confidence = 0.90;
+        itemName = 'Glass Bottles and Cullet';
+        itemNameHi = 'कांच की बोतलें और शीशा';
+        weight = 6.0;
+      } else if (image.includes('cardboard') || image.includes('paper')) {
+        fallbackCat = 'Paper/Cardboard';
+        confidence = 0.90;
+        itemName = 'Cardboard & Paper Scrap';
+        itemNameHi = 'गत्ता और कागज रद्दी';
+        weight = 10.0;
       } else {
-        // Generic fallback for non-preset custom capture
+        // Generic fallback for user photo when offline/unconnected
         isUncertain = true;
-        confidence = 0.62;
-        fallbackCat = 'Copper Wire & Motors';
-        itemName = 'Unsegregated Scrap Item (Please Verify)';
-        itemNameHi = 'कबाड़ सामग्री (कृपया श्रेणी की पुष्टि करें)';
+        confidence = 0.65;
+        fallbackCat = 'Plastic';
+        itemName = 'Scrap Materials (Please Confirm Category)';
+        itemNameHi = 'कबाड़ सामग्री (कृपया श्रेणी चुनें)';
+        weight = 3.0;
       }
 
       // Enriched metadata mapping per category for high-fidelity inspections
@@ -397,6 +496,30 @@ Also:
         safetyEn: string;
         safetyHi: string;
       }> = {
+        'Plastic': {
+          materials: ['Polyethylene Terephthalate (PET)', 'High-Density Polyethylene (HDPE)', 'Polypropylene (PP)'],
+          hazardous: ['Chemical Residues (Clean Thoroughly)'],
+          safetyEn: 'Flatten bottles to optimize transport. Rinse containers with residual fluids.',
+          safetyHi: 'बोतलों को दबाकर पिचकाएं ताकि जगह कम लगे। रसायनों वाले डिब्बों को धोकर सुखाएं।',
+        },
+        'Glass': {
+          materials: ['Soda-Lime Cullet Glass', 'Silica Sand Mineral', 'Aluminum Caps'],
+          hazardous: ['Sharp Broken Shards & Glass Splinters'],
+          safetyEn: 'Always wear heavy leather/cut-resistant gloves when handling glass bottles.',
+          safetyHi: 'कांच की बोतलें उठाते समय हमेशा कट-प्रूफ मोटे दस्ताने पहनें।',
+        },
+        'Paper/Cardboard': {
+          materials: ['Unbleached Kraft Pulp', 'Corrugated Fluting Sheet', 'Recycled Newsprint Fibers'],
+          hazardous: ['Moisture / Mold Spores if wet'],
+          safetyEn: 'Keep dry and bundled tightly with jute twine to prevent rain damage.',
+          safetyHi: 'गत्ते और कागज को सूखा रखें और सुतली से बांधकर सुरक्षित जगह रखें।',
+        },
+        'Metal': {
+          materials: ['Ferrous Scrap Iron', 'Structural Carbon Steel', 'Non-Ferrous Aluminum/Brass'],
+          hazardous: ['Sharp Jagged Burrs', 'Rust / Tetanus Risk'],
+          safetyEn: 'Use steel-toe boots and reinforced safety gloves. Ensure tetanus vaccination.',
+          safetyHi: 'लोहा उठाते समय नुकीले किनारों से बचें और मोटे दस्ताने अवश्य पहनें।',
+        },
         'PCBs & Circuit Boards': {
           materials: ['FR-4 Fiberglass Laminate', 'Pure Copper Traces', 'Gold Plated Connectors', 'Silicon ICs'],
           hazardous: ['Lead Solder (Pb)', 'Brominated Flame Retardants (BFR)'],
@@ -432,6 +555,12 @@ Also:
           hazardous: ['Capacitor Dielectrics', 'Rubber Gaskets'],
           safetyEn: 'Inspect for live internal capacitors and sharp motor fan impellers.',
           safetyHi: 'मोटर के नुकीले किनारों से सावधान रहें और उपयुक्त दस्ताने पहनें।',
+        },
+        'Mixed/Other': {
+          materials: ['Mixed Recyclable Scrap Materials'],
+          hazardous: ['Varies by Composition'],
+          safetyEn: 'Segregate dry recyclables by material type before dispatching to recyclers.',
+          safetyHi: 'सामग्री को रीसाइक्लर को भेजने से पहले प्लास्टिक, धातु और कागज में अलग करें।',
         },
       };
 

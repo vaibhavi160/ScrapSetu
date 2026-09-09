@@ -12,6 +12,7 @@ import { WASTE_CATEGORIES } from '../data/mockData';
 import { VoiceButton } from '../components/VoiceButton';
 import { playChime } from '../utils/audioSpeech';
 import { logClassificationRecord } from '../utils/storage';
+import { getApiUrl } from '../utils/apiConfig';
 
 interface Step3ClassificationScreenProps {
   language: Language;
@@ -52,23 +53,23 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
       : 'Analyzing scrap composition with Gemini Vision AI...'
   );
 
-  const [predictedCategory, setPredictedCategory] = useState<WasteCategory>('PCBs & Circuit Boards');
+  const [predictedCategory, setPredictedCategory] = useState<WasteCategory>('Plastic');
   const [confidence, setConfidence] = useState<number>(0.85);
-  const [secondaryCategory, setSecondaryCategory] = useState<WasteCategory>('Small Home Appliances');
+  const [secondaryCategory, setSecondaryCategory] = useState<WasteCategory>('Metal');
   const [secondaryConfidence, setSecondaryConfidence] = useState<number>(0.15);
   const [isUncertain, setIsUncertain] = useState<boolean>(false);
-  const [confirmedCategory, setConfirmedCategory] = useState<WasteCategory>('PCBs & Circuit Boards');
+  const [confirmedCategory, setConfirmedCategory] = useState<WasteCategory>('Plastic');
   const [manualConfirmed, setManualConfirmed] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
   // Rich AI-detected details
-  const [detectedItemName, setDetectedItemName] = useState<string>('Electronic Scrap');
-  const [detectedItemNameHi, setDetectedItemNameHi] = useState<string>('इलेक्ट्रॉनिक कबाड़');
+  const [detectedItemName, setDetectedItemName] = useState<string>('Scrap Material');
+  const [detectedItemNameHi, setDetectedItemNameHi] = useState<string>('कबाड़ सामग्री');
   const [materials, setMaterials] = useState<string[]>(['Recoverable Scrap Grade A']);
   const [hazardousElements, setHazardousElements] = useState<string[]>(['None Detected']);
-  const [safetyGuidanceEn, setSafetyGuidanceEn] = useState<string>('Wear safety gloves and avoid breaking fragile glass or puncturing cells.');
-  const [safetyGuidanceHi, setSafetyGuidanceHi] = useState<string>('सुरक्षा दस्ताने पहनें और टूटे कांच या बैटरी को पंक्चर करने से बचें।');
-  const [estimatedWeightKg, setEstimatedWeightKg] = useState<number>(8.0);
+  const [safetyGuidanceEn, setSafetyGuidanceEn] = useState<string>('Wear safety gloves and inspect for sharp edges.');
+  const [safetyGuidanceHi, setSafetyGuidanceHi] = useState<string>('सुरक्षा दस्ताने पहनें और नुकीले किनारों से सावधान रहें।');
+  const [estimatedWeightKg, setEstimatedWeightKg] = useState<number>(4.0);
   const [cleanliness, setCleanliness] = useState<'clean' | 'dirty'>('clean');
   const [structural, setStructural] = useState<'intact' | 'damaged'>('intact');
   const [aiModelSource, setAiModelSource] = useState<string>('gemini-3.8-flash');
@@ -85,7 +86,8 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
     );
 
     try {
-      const res = await fetch('/api/classify', {
+      const targetUrl = getApiUrl('/api/classify');
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,14 +103,14 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
       const data = await res.json();
 
-      const cat: WasteCategory = data.category || 'PCBs & Circuit Boards';
+      const cat: WasteCategory = data.category || 'Plastic';
       const conf = typeof data.confidence === 'number' ? data.confidence : 0.85;
       const uncertain = Boolean(data.isUncertain || conf < 0.7);
 
       setPredictedCategory(cat);
       setConfirmedCategory(cat);
       setConfidence(conf);
-      setSecondaryCategory(data.secondaryCategory || 'Small Home Appliances');
+      setSecondaryCategory(data.secondaryCategory || 'Metal');
       setSecondaryConfidence(data.secondaryConfidence || 0.15);
       setIsUncertain(uncertain);
       setManualConfirmed(!uncertain);
@@ -132,15 +134,18 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
     } catch (err) {
       console.warn('Fallback to client heuristic due to network/server:', err);
       // Fallback
-      let fallbackCat: WasteCategory = 'Copper Wire & Motors';
-      let conf = 0.82;
-      let itemName = 'Copper Wire and Motors';
-      let itemNameHi = 'तांबे के तार और मोटर कबाड़';
+      let fallbackCat: WasteCategory = 'Plastic';
+      let conf = 0.85;
+      let itemName = 'Plastic Scrap (PET / HDPE Bottles)';
+      let itemNameHi = 'प्लास्टिक कबाड़ (बोतलें व डिब्बे)';
       let uncertain = false;
-      let wt = 6.0;
+      let wt = 3.5;
 
       if (typeof presetIndex === 'number') {
         const presets = [
+          { cat: 'Plastic' as WasteCategory, name: 'Plastic PET Bottles & Beverage Jugs', nameHi: 'प्लास्टिक की बोतलें (PET) व डिब्बे', conf: 0.96, wt: 4.5 },
+          { cat: 'Glass' as WasteCategory, name: 'Glass Bottles & Jars (Cullet)', nameHi: 'कांच की बोतलें एवं शीशे के जार', conf: 0.93, wt: 8.0 },
+          { cat: 'Paper/Cardboard' as WasteCategory, name: 'Corrugated Cardboard Box Scrap', nameHi: 'गत्ता कार्टन एवं रद्दी पेपर', conf: 0.94, wt: 15.0 },
           { cat: 'PCBs & Circuit Boards' as WasteCategory, name: 'Computer Motherboard (PCBs)', nameHi: 'कंप्यूटर मदरबोर्ड (सर्किट बोर्ड)', conf: 0.95, wt: 8.5 },
           { cat: 'Lithium-ion & Batteries' as WasteCategory, name: 'Lithium-ion Battery Pack', nameHi: 'लिथियम-आयन बैटरी पैक', conf: 0.92, wt: 16.0 },
           { cat: 'Copper Wire & Motors' as WasteCategory, name: 'Stripped Bright Copper Wires', nameHi: 'चमकीले तांबे के तार', conf: 0.89, wt: 12.0 },
@@ -153,8 +158,34 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
         conf = p.conf;
         itemName = p.name;
         itemNameHi = p.nameHi;
-        uncertain = Boolean(p.uncertain);
+        uncertain = Boolean((p as any).uncertain);
         wt = p.wt;
+      } else if (photoUrl) {
+        // Intelligent heuristics for custom camera capture when server is offline
+        const lowerUrl = photoUrl.toLowerCase();
+        if (lowerUrl.includes('glass')) {
+          fallbackCat = 'Glass';
+          itemName = 'Glass Bottles & Cullet';
+          itemNameHi = 'कांच की बोतलें और शीशा';
+          wt = 6.0;
+        } else if (lowerUrl.includes('paper') || lowerUrl.includes('cardboard')) {
+          fallbackCat = 'Paper/Cardboard';
+          itemName = 'Cardboard & Paper Scrap';
+          itemNameHi = 'गत्ता और कागज रद्दी';
+          wt = 12.0;
+        } else if (lowerUrl.includes('pcb') || lowerUrl.includes('circuit')) {
+          fallbackCat = 'PCBs & Circuit Boards';
+          itemName = 'Circuit Board / PCB Scrap';
+          itemNameHi = 'सर्किट बोर्ड कबाड़';
+          wt = 5.0;
+        } else {
+          // If unsure, default to Plastic but set uncertain so the user can easily select
+          uncertain = true;
+          conf = 0.65;
+          fallbackCat = 'Plastic';
+          itemName = 'Scrap Materials (Please Confirm Category)';
+          itemNameHi = 'कबाड़ सामग्री (कृपया सही श्रेणी चुनें)';
+        }
       }
 
       setPredictedCategory(fallbackCat);
@@ -179,6 +210,11 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
   const currentCategoryInfo = WASTE_CATEGORIES.find((c) => c.id === confirmedCategory) || WASTE_CATEGORIES[0];
   const predictedCategoryInfo = WASTE_CATEGORIES.find((c) => c.id === predictedCategory) || WASTE_CATEGORIES[0];
+
+  const POPULAR_QUICK_CATEGORIES = ['Plastic', 'Glass', 'Paper/Cardboard', 'Metal', 'PCBs & Circuit Boards', 'Lithium-ion & Batteries'];
+  const quickCategoryItems = POPULAR_QUICK_CATEGORIES
+    .map((id) => WASTE_CATEGORIES.find((c) => c.id === id))
+    .filter(Boolean) as WasteCategoryInfo[];
 
   const handleSelectCategory = (cat: WasteCategory) => {
     playChime('click');
@@ -436,7 +472,7 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
 
                 {/* Quick 1-Click Category Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {WASTE_CATEGORIES.slice(0, 6).map((cat) => (
+                  {quickCategoryItems.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => handleSelectCategory(cat.id)}
