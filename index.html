@@ -2,6 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        var _warn = console.warn;
+        var _error = console.error;
+        console.warn = function() {
+          if (arguments.length > 0 && typeof arguments[0] === 'string' && arguments[0].indexOf('[vite]') !== -1) return;
+          return _warn.apply(console, arguments);
+        };
+        console.error = function() {
+          if (arguments.length > 0 && typeof arguments[0] === 'string' && arguments[0].indexOf('[vite]') !== -1) return;
+          return _error.apply(console, arguments);
+        };
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>ScrapSetu | Smart Scrap Marketplace & AI Classification</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
