@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, MapPin, Camera, FileSpreadsheet, Settings } from 'lucide-react';
 import { FlowStep, Language } from '../types';
+import { playChime, triggerHaptic } from '../utils/audioSpeech';
 
 export type NavTab = 'home' | 'recyclers' | 'scan' | 'ledger' | 'settings';
 
@@ -28,6 +29,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   const handleNav = (step: FlowStep, tab: NavTab) => {
+    playChime('click');
+    triggerHaptic('light');
     if (typeof onNavigateStep === 'function') {
       onNavigateStep(step);
     }
@@ -37,6 +40,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   const handleSettings = () => {
+    playChime('click');
+    triggerHaptic('light');
     if (typeof onOpenSettings === 'function') {
       onOpenSettings();
     } else if (typeof onTabChange === 'function') {

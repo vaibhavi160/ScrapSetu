@@ -209,8 +209,40 @@ export const speakText = async (text: string, language: Language = 'en'): Promis
   return false;
 };
 
+// Trigger Android tactile haptic vibration if supported on device
+export const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' | 'alert' | 'click' | 'info' = 'light') => {
+  if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+    try {
+      switch (type) {
+        case 'click':
+        case 'info':
+        case 'light':
+          navigator.vibrate(12);
+          break;
+        case 'medium':
+          navigator.vibrate(28);
+          break;
+        case 'heavy':
+          navigator.vibrate(50);
+          break;
+        case 'success':
+          navigator.vibrate([15, 45, 25]);
+          break;
+        case 'alert':
+          navigator.vibrate([35, 45, 35, 45, 35]);
+          break;
+      }
+    } catch {
+      // Ignore vibration errors if restricted by device policy
+    }
+  }
+};
+
 // Web Audio API pure tone synthesizer for tactile acoustic feedback
 export const playChime = (type: 'success' | 'alert' | 'info' | 'click' = 'click') => {
+  // Trigger physical haptic vibration for Android device
+  triggerHaptic(type);
+
   if (typeof window === 'undefined') return;
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Language, FlowStep, WasteCategory, WasteCategoryInfo, AppSettings, 
   Transaction, Recycler, PickupSchedule, ClassificationResult, PhotoQualityAssessment,
@@ -222,6 +222,22 @@ export default function App() {
   }, [currentUser?.id]);
 
   // Android hardware & gesture back button navigation handler
+  const lastHistoryStepRef = useRef<number>(1);
+  useEffect(() => {
+    if (currentStep > 1 && currentStep !== lastHistoryStepRef.current) {
+      window.history.pushState({ step: currentStep }, '');
+      lastHistoryStepRef.current = currentStep;
+    } else if (currentStep === 1) {
+      lastHistoryStepRef.current = 1;
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (activeModal || isDbModalOpen || isAuthModalOpen) {
+      window.history.pushState({ modal: true }, '');
+    }
+  }, [activeModal, isDbModalOpen, isAuthModalOpen]);
+
   useEffect(() => {
     const handlePopState = () => {
       if (activeModal !== null) {

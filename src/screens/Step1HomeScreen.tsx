@@ -178,7 +178,11 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
                 <Coins className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                {currentLanguage === 'hi' ? 'कबाड़ इको पॉइंट्स व कमाई' : 'Eco Points & Earnings'}
+                {currentLanguage === 'hi'
+                  ? 'कबाड़ इको पॉइंट्स व कमाई'
+                  : currentLanguage === 'mr'
+                  ? 'कचरा इको पॉइंट्स व कमाई'
+                  : 'Eco Points & Earnings'}
               </span>
             </div>
 
@@ -196,6 +200,8 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               <span>
                 {currentLanguage === 'hi' 
                   ? `+₹${Math.round(extraFairBonus)} इस सप्ताह (+${totalWeightKg.toFixed(1)} kg)`
+                  : currentLanguage === 'mr'
+                  ? `+₹${Math.round(extraFairBonus)} या आठवड्यात (+${totalWeightKg.toFixed(1)} kg)`
                   : `+₹${Math.round(extraFairBonus)} this week (+${totalWeightKg.toFixed(1)} kg)`}
               </span>
             </div>
@@ -316,10 +322,10 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
             playChime('click');
             startCollection();
           }}
-          className="w-full py-3.5 px-4 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] active:scale-98 text-white font-black text-sm sm:text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center gap-2 cursor-pointer group"
+          className="w-full py-3.5 px-3 sm:px-4 rounded-full bg-[#E8433D] hover:bg-[#D32F2F] active:scale-98 text-white font-black text-sm sm:text-base shadow-md shadow-[#E8433D]/25 transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer group"
         >
-          <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span>{currentLanguage === 'hi' ? 'कबाड़ बेचें' : 'Sell Scrap'}</span>
+          <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform shrink-0" />
+          <span className="truncate">{currentLanguage === 'hi' ? 'कबाड़ बेचें' : currentLanguage === 'mr' ? 'कचरा विका' : 'Sell Scrap'}</span>
         </button>
 
         {/* Right: White Pill Button with Dark Border/Outline & Dark Text (Secondary Action) */}
@@ -330,10 +336,10 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
             playChime('click');
             onOpenLedger();
           }}
-          className="w-full py-3.5 px-4 rounded-full bg-white hover:bg-[#EEF1F8] active:scale-98 border-2 border-[#0F1A3C] text-[#0F1A3C] font-black text-sm sm:text-base shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer group"
+          className="w-full py-3.5 px-3 sm:px-4 rounded-full bg-white hover:bg-[#EEF1F8] active:scale-98 border-2 border-[#0F1A3C] text-[#0F1A3C] font-black text-sm sm:text-base shadow-xs transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer group"
         >
-          <FileSpreadsheet className="w-5 h-5 text-[#0F1A3C] group-hover:scale-110 transition-transform" />
-          <span>{currentLanguage === 'hi' ? 'मेरी कमाई' : 'My Earnings'}</span>
+          <FileSpreadsheet className="w-5 h-5 text-[#0F1A3C] group-hover:scale-110 transition-transform shrink-0" />
+          <span className="truncate">{currentLanguage === 'hi' ? 'मेरी कमाई' : currentLanguage === 'mr' ? 'माझी कमाई' : 'My Earnings'}</span>
         </button>
       </div>
 
@@ -343,12 +349,12 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-500">
-            {currentLanguage === 'hi' ? 'मुख्य सेवाएं' : 'Main Services'}
+            {currentLanguage === 'hi' ? 'मुख्य सेवाएं' : currentLanguage === 'mr' ? 'मुख्य सेवा' : 'Main Services'}
           </h2>
           <span className="text-[11px] text-[#E8433D] font-bold">8 Available</span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3.5">
           {/* 1. Scan Scrap */}
           <button
             id="tile-scan-scrap"
@@ -357,13 +363,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               startCollection();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <Camera className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'स्कैन कबाड़' : 'Scan Scrap'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'स्कैन कबाड़' : currentLanguage === 'mr' ? 'स्कॅन कचरा' : 'Scan Scrap'}
             </span>
           </button>
 
@@ -376,13 +382,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               const el = document.getElementById('cpcb-rate-board-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <TrendingUp className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'दर सूची' : 'Fair Rates'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'दर सूची' : currentLanguage === 'mr' ? 'रास्त दर' : 'Fair Rates'}
             </span>
           </button>
 
@@ -395,13 +401,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               const el = document.getElementById('community-recyclers-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <MapPin className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'रीसाइक्लर' : 'Recyclers'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'रीसाइक्लर' : currentLanguage === 'mr' ? 'रिसायकलर' : 'Recyclers'}
             </span>
           </button>
 
@@ -413,13 +419,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               onOpenLedger();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <FileSpreadsheet className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <FileSpreadsheet className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'बहीखाता' : 'Ledger'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'बहीखाता' : currentLanguage === 'mr' ? 'खातेवही' : 'Ledger'}
             </span>
           </button>
 
@@ -431,13 +437,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               onOpenSafety();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <ShieldAlert className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'सुरक्षा नियम' : 'Safety'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'सुरक्षा नियम' : currentLanguage === 'mr' ? 'सुरक्षा नियम' : 'Safety'}
             </span>
           </button>
 
@@ -449,13 +455,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               onOpenImpact();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <BarChart3 className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'ईपीआर प्रभाव' : 'EPR Impact'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'ईपीआर प्रभाव' : currentLanguage === 'mr' ? 'ईपीआर प्रभाव' : 'EPR Impact'}
             </span>
           </button>
 
@@ -467,13 +473,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               if (onOpenDatabase) onOpenDatabase();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <Database className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <Database className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'डेटाबेस' : 'Database'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'डेटाबेस' : currentLanguage === 'mr' ? 'डेटाबेस' : 'Database'}
             </span>
           </button>
 
@@ -485,13 +491,13 @@ export const Step1HomeScreen: React.FC<Step1HomeScreenProps> = ({
               playChime('click');
               if (onOpenAuth) onOpenAuth();
             }}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+            className="bg-white p-2 sm:p-3 rounded-2xl border border-slate-200 hover:border-[#E8433D] hover:shadow-sm flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
-              <UserCheck className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-[#EEF1F8] group-hover:bg-[#E8433D] text-[#0F1A3C] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs mb-1.5">
+              <UserCheck className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
-              {currentLanguage === 'hi' ? 'खाता' : 'Account'}
+            <span className="text-[10.5px] sm:text-xs font-bold text-[#111827] group-hover:text-[#E8433D] line-clamp-1">
+              {currentLanguage === 'hi' ? 'खाता' : currentLanguage === 'mr' ? 'खाते' : 'Account'}
             </span>
           </button>
         </div>
