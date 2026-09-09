@@ -129,7 +129,7 @@ async function startServer() {
       const ai = getGenAI();
 
       // Candidate models in order of preference if primary is experiencing high demand (503/429)
-      const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
 
       // If Gemini AI is available and we have valid image data, call Gemini Vision
       if (ai && base64Data) {
@@ -253,7 +253,6 @@ Also:
         };
 
         // Try candidate models sequentially to seamlessly absorb spikes in demand
-        const CANDIDATE_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
         for (const modelName of CANDIDATE_MODELS) {
           try {
             const response = await ai.models.generateContent({

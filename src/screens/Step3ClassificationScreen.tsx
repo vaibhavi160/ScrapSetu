@@ -359,6 +359,8 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
                     <Zap className="w-3 h-3 text-[#E8433D]" />
                     {aiModelSource === 'gemini-3.8-flash'
                       ? 'Gemini 3.8 Flash'
+                      : aiModelSource === 'gemini-3.6-flash'
+                      ? 'Gemini 3.6 Flash'
                       : aiModelSource === 'gemini-3.1-flash-lite'
                       ? 'Gemini 3.1 Flash Lite'
                       : aiModelSource === 'gemini-flash-latest'
