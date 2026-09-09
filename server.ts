@@ -20,12 +20,18 @@ const PORT = 3000;
 
 // Lazy initialization of Google GenAI client
 let aiClient: GoogleGenAI | null = null;
+let cachedApiKey: string | undefined = undefined;
+
 function getGenAI(): GoogleGenAI | null {
+  if (!process.env.GEMINI_API_KEY) {
+    dotenv.config();
+  }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return null;
   }
-  if (!aiClient) {
+  if (!aiClient || cachedApiKey !== apiKey) {
+    cachedApiKey = apiKey;
     aiClient = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -128,8 +134,8 @@ async function startServer() {
 
       const ai = getGenAI();
 
-      // Candidate models in order of preference if primary is experiencing high demand (503/429)
-      const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.6-flash'];
+      // Candidate models in order of preference (fastest with high rate limits first)
+      const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
 
       // If Gemini AI is available and we have valid image data, call Gemini Vision
       if (ai && base64Data) {
@@ -141,49 +147,52 @@ async function startServer() {
         };
 
         const promptText = `
-CRITICAL INSTRUCTION FOR WASTE CLASSIFICATION:
-You are an expert waste and recyclable materials inspector for ScrapSetu in India.
-You inspect BOTH general household/commercial recyclable scrap (plastic bottles, containers, glass, paper, cardboard, scrap metal) AND electronic scrap.
+You are an expert waste classification and recycling inspector for ScrapSetu in India.
+Inspect the provided image of scrap / recyclable / e-waste material carefully and classify it into the most accurate waste category.
 
-ABSOLUTE TOP-PRIORITY RULES:
-1. BOTTLE / PLASTIC RULE: Any plastic bottle (water bottle, Bisleri, Kinley, Aquafina, Coke/Pepsi bottle, beverage jug, shampoo bottle, oil container, plastic bucket, tub) MUST ALWAYS be classified as "Plastic". NEVER classify a bottle, jug, or plastic container as "PCBs & Circuit Boards" or "E-waste"!
-2. GLASS RULE: Any glass bottle (beer bottle, soda bottle, wine bottle, glass jar, glass cullet) MUST be classified as "Glass".
-3. CARDBOARD / PAPER RULE: Cardboard cartons, packing boxes, newspapers (raddi), notebooks MUST be classified as "Paper/Cardboard".
-4. PCB RULE: ONLY classify as "PCBs & Circuit Boards" if the item clearly contains an electronic circuit board with green/blue FR4 substrate, soldered microchips, ICs, and electronic traces.
-5. If the image depicts a bottle or plastic container, IT IS 100% "Plastic" (or "Glass" if glass).
+Categories to choose from (choose EXACTLY ONE):
+- "Plastic": PET bottles (water, soda), HDPE jugs (milk, oil), plastic buckets, crates, PVC pipes, plastic packaging, wrappers, plastic chairs/containers.
+- "Glass": Glass bottles (beer, soda, wine, liquor), food/pickle jars, cullet, broken glass, window pane pieces.
+- "Paper/Cardboard": Corrugated cardboard cartons/boxes, newspaper raddi, books, notebooks, shredded paper, office paperwork, paper bags.
+- "Metal": Scrap iron, steel rods, sheet metal, iron mesh, steel utensils, tin cans, aluminum beverage cans, brass, bronze (structural/scrap metal).
+- "PCBs & Circuit Boards": Printed circuit boards (PCBs), computer motherboards, RAM modules, green/blue electronics boards with soldered microchips, ICs, transistors, telecom cards.
+- "Lithium-ion & Batteries": Lithium-ion battery packs, smartphone batteries, laptop battery modules, 18650 cylindrical cells, lead-acid inverter/car batteries, dry cells.
+- "Copper Wire & Motors": Insulated copper cables, stripped bright copper wire, electric motor stators/windings (from ceiling fans, water pumps, coolers), transformers.
+- "Smartphones & Tablets": Mobile phones, smartphones (Android/iPhone), keypad feature phones, damaged tablets, iPads.
+- "Laptops & Computers": Laptops, notebooks, desktop CPU cabinets, internal hard disk drives (HDD/SSD), computer keyboards, mice.
+- "Displays & CRT Monitors": Computer monitors, LCD/LED display panels, TVs, CRT glass picture tubes.
+- "Large White Goods & ACs": Refrigerators, AC units, compressors, washing machines, microwaves.
+- "Small Home Appliances": Kitchen mixer grinders, electric irons, blenders, electric kettles, toasters, hair dryers, table/exhaust fans.
+- "Fluorescent & LED Lighting": Fluorescent tubelights, CFL spiral bulbs, mercury vapor lamps, LED bulbs and drivers.
+- "Solar PV Panels & Inverters": Solar photovoltaic modules/panels, solar inverters, solar charge controllers.
+- "E-waste": General mixed consumer electronics, power adapters, phone chargers, remote controls, routers, cables with plugs, earphones.
+- "Textile": Old clothes, fabrics, garments, cloth bags, rags.
+- "Rubber": Rubber tyres, inner tubes, rubber belts, footwear soles.
+- "Organic": Food scraps, fruit peels, vegetable waste, garden leaves.
+- "Mixed/Other": Unsorted mixed materials that do not belong to a single category above.
 
-Categories (choose EXACTLY ONE):
-- "Plastic" (PET plastic water/soda bottles, milk jugs, HDPE containers, plastic buckets, PVC/PP scrap)
-- "Glass" (glass bottles, beverage bottles, glass jars, glass panes)
-- "Paper/Cardboard" (corrugated cardboard boxes, cartons, newspapers, books, office paper raddi)
-- "Metal" (iron rods, steel sheet metal, tin/aluminum beverage cans, brass, copper scrap)
-- "PCBs & Circuit Boards" (green/blue computer circuit boards, motherboards, RAM, telecom server cards ONLY)
-- "Lithium-ion & Batteries" (phone/laptop batteries, cylindrical 18650 cells, lead-acid inverter batteries)
-- "Copper Wire & Motors" (stripped copper, PVC insulated wires, fan/cooler/pump electric motors, transformers)
-- "Smartphones & Tablets" (mobile phones, touchscreens, keypads, damaged tablets)
-- "Laptops & Computers" (laptops, PC towers, hard drives, keyboards)
-- "Displays & CRT Monitors" (CRT glass tubes, LED/LCD monitors, TVs)
-- "Large White Goods & ACs" (compressors, washing machines, refrigerators, microwaves)
-- "Small Home Appliances" (irons, mixers, blenders, kettles, toasters, chargers, adapters)
-- "Fluorescent & LED Lighting" (tubelights, CFLs, mercury vapor bulbs, LED drivers)
-- "Solar PV Panels & Inverters" (solar panels, inverters, charge controllers)
-- "Mixed/Other" (mixed unsegregated scrap or unidentified materials)
+Classification Guidelines:
+- Focus on the primary intended scrap item shown in the image.
+- Electronic devices (such as laptops, phones, kitchen appliances, circuit boards, batteries, copper wiring) must be categorized under their specific electronic/appliance category, NOT under generic plastic or metal, even if they have a plastic casing or metal frame.
+- Plastic bottles, plastic containers, and plastic buckets should be classified as "Plastic".
+- Glass bottles and jars should be classified as "Glass".
+- Corrugated boxes and paper scrap should be classified as "Paper/Cardboard".
 
-Fields required:
-1. category: EXACT category name from above.
-2. confidence: number between 0.0 and 1.0.
-3. detectedItemName: Specific identified item name in English (e.g. "PET Plastic Water Bottles").
-4. detectedItemNameHi: Specific identified item name in Hindi (e.g. "प्लास्टिक की पानी की बोतलें (PET)").
-5. secondaryCategory: Next most plausible category.
-6. secondaryConfidence: Secondary confidence (0.0 to 1.0).
-7. isUncertain: boolean (true if blurry/unclear, false if obvious).
-8. estimatedWeightKg: realistic standard weight in kilograms. For plastic bottles, typically 1.0 - 5.0 kg for a batch.
+Fields required in the JSON output:
+1. category: EXACT category string from the list above.
+2. confidence: Float between 0.0 and 1.0 representing model certainty.
+3. detectedItemName: Specific identified item name in English (e.g. "Dell Laptop with Broken Screen" or "PET Plastic Bottles").
+4. detectedItemNameHi: Specific identified item name in Hindi (e.g. "लैपटॉप" or "प्लास्टिक की बोतलें").
+5. secondaryCategory: Next most plausible category if any.
+6. secondaryConfidence: Secondary confidence float between 0.0 and 1.0.
+7. isUncertain: boolean (true if image is blurry, ambiguous, or confidence < 0.70).
+8. estimatedWeightKg: Realistic estimated weight in kilograms for typical scrap batch of this item.
 9. cleanliness: "clean" or "dirty".
 10. structural: "intact" or "damaged".
-11. materials: array of recyclable materials.
-12. hazardousElements: array of hazardous elements detected.
-13. safetyGuidanceEn: safety handling advice in English.
-14. safetyGuidanceHi: safety handling advice in Hindi.
+11. materials: array of recovered recyclable materials (e.g. ["Copper", "Silicon", "Aluminum"]).
+12. hazardousElements: array of hazardous elements detected or warning notes (e.g. ["None Detected"] or ["Lithium Electrolyte"]).
+13. safetyGuidanceEn: Practical scrap handling advice in English.
+14. safetyGuidanceHi: Practical scrap handling advice in Hindi.
 `;
 
         const responseSchema = {
@@ -192,7 +201,7 @@ Fields required:
             category: {
               type: Type.STRING,
               enum: VALID_CATEGORIES,
-              description: 'Must be one of the listed categories: Plastic, Glass, Paper/Cardboard, Metal, PCBs & Circuit Boards, Lithium-ion & Batteries, Copper Wire & Motors, Smartphones & Tablets, Laptops & Computers, Displays & CRT Monitors, Large White Goods & ACs, Small Home Appliances, Fluorescent & LED Lighting, Solar PV Panels & Inverters, Mixed/Other',
+              description: 'Must be one of the listed categories: Plastic, Glass, Paper/Cardboard, Metal, PCBs & Circuit Boards, Lithium-ion & Batteries, Copper Wire & Motors, Smartphones & Tablets, Laptops & Computers, Displays & CRT Monitors, Large White Goods & ACs, Small Home Appliances, Fluorescent & LED Lighting, Solar PV Panels & Inverters, E-waste, Textile, Rubber, Organic, Mixed/Other',
             },
             confidence: {
               type: Type.NUMBER,
@@ -200,11 +209,11 @@ Fields required:
             },
             detectedItemName: {
               type: Type.STRING,
-              description: 'Specific identified item name in English (e.g. PET Plastic Water Bottles)',
+              description: 'Specific identified item name in English (e.g. Dell Laptop or PET Plastic Water Bottles)',
             },
             detectedItemNameHi: {
               type: Type.STRING,
-              description: 'Specific identified item name in Hindi (e.g. प्लास्टिक की पानी की बोतलें)',
+              description: 'Specific identified item name in Hindi (e.g. लैपटॉप या प्लास्टिक की बोतलें)',
             },
             secondaryCategory: {
               type: Type.STRING,
@@ -280,111 +289,57 @@ Fields required:
             if (rawText) {
               const parsed = JSON.parse(rawText);
 
-              // Disambiguation and validation
+              // Category normalization and validation against VALID_CATEGORIES
               let category = parsed.category;
-              const detectedLower = (parsed.detectedItemName || '').toLowerCase();
-              const detectedHi = (parsed.detectedItemNameHi || '').toLowerCase();
-              const catLower = (category || '').toLowerCase();
-
-              // Explicit bottle/plastic safeguard: bottles must ALWAYS be Plastic or Glass, never PCB
-              const isBottleOrContainer =
-                detectedLower.includes('bottle') ||
-                detectedLower.includes('pet ') ||
-                detectedLower.includes('jug') ||
-                detectedLower.includes('shampoo') ||
-                detectedLower.includes('container') ||
-                detectedLower.includes('canister') ||
-                detectedLower.includes('bucket') ||
-                detectedLower.includes('plastic') ||
-                detectedHi.includes('बोतल') ||
-                detectedHi.includes('बॉटल') ||
-                detectedHi.includes('प्लास्टिक') ||
-                catLower.includes('bottle');
-
-              const isGlassSpecific =
-                detectedLower.includes('glass') ||
-                detectedLower.includes('cullet') ||
-                detectedHi.includes('कांच') ||
-                detectedHi.includes('शीशा') ||
-                catLower.includes('glass');
-
-              const isCardboardOrPaper =
-                detectedLower.includes('cardboard') ||
-                detectedLower.includes('carton') ||
-                detectedLower.includes('paper') ||
-                detectedLower.includes('newspaper') ||
-                detectedLower.includes('box') ||
-                detectedHi.includes('गत्ता') ||
-                detectedHi.includes('कागज') ||
-                detectedHi.includes('रद्दी') ||
-                catLower.includes('cardboard') ||
-                catLower.includes('paper');
-
-              const isMetalSpecific =
-                (detectedLower.includes('metal') ||
-                 detectedLower.includes('steel') ||
-                 detectedLower.includes('iron') ||
-                 detectedLower.includes('aluminum') ||
-                 detectedLower.includes('tin can') ||
-                 detectedHi.includes('लोहा') ||
-                 detectedHi.includes('टीन')) &&
-                !detectedLower.includes('circuit') &&
-                !detectedLower.includes('pcb');
-
-              if (isBottleOrContainer) {
-                category = isGlassSpecific ? 'Glass' : 'Plastic';
-              } else if (isGlassSpecific) {
-                category = 'Glass';
-              } else if (isCardboardOrPaper) {
-                category = 'Paper/Cardboard';
-              } else if (isMetalSpecific) {
-                category = 'Metal';
-              } else if (category === 'PCBs & Circuit Boards') {
-                // Double check PCB classification: must actually contain PCB keywords, not bottle/container
-                const isRealPCB =
-                  detectedLower.includes('pcb') ||
-                  detectedLower.includes('motherboard') ||
-                  detectedLower.includes('circuit') ||
-                  detectedLower.includes('ram') ||
-                  detectedLower.includes('telecom') ||
-                  detectedLower.includes('microchip') ||
-                  detectedHi.includes('सर्किट') ||
-                  detectedHi.includes('मदरबोर्ड');
-                if (!isRealPCB) {
-                  category = 'Plastic';
-                }
-              } else if (!VALID_CATEGORIES.includes(category)) {
-                // Fuzzy map
-                if (catLower.includes('circuit') || catLower.includes('pcb') || catLower.includes('motherboard')) {
-                  category = 'PCBs & Circuit Boards';
-                } else if (catLower.includes('battery') || catLower.includes('lithium') || catLower.includes('cell')) {
-                  category = 'Lithium-ion & Batteries';
-                } else if (catLower.includes('copper') || catLower.includes('wire') || catLower.includes('cable') || catLower.includes('motor')) {
-                  category = 'Copper Wire & Motors';
-                } else if (catLower.includes('phone') || catLower.includes('tablet') || catLower.includes('mobile')) {
-                  category = 'Smartphones & Tablets';
-                } else if (catLower.includes('laptop') || catLower.includes('computer') || catLower.includes('cpu')) {
-                  category = 'Laptops & Computers';
-                } else if (catLower.includes('monitor') || catLower.includes('display') || catLower.includes('screen') || catLower.includes('crt')) {
-                  category = 'Displays & CRT Monitors';
-                } else if (catLower.includes('ac') || catLower.includes('fridge') || catLower.includes('white good') || catLower.includes('washing')) {
-                  category = 'Large White Goods & ACs';
-                } else if (catLower.includes('appliance') || catLower.includes('iron') || catLower.includes('mixer') || catLower.includes('kettle')) {
-                  category = 'Small Home Appliances';
-                } else if (catLower.includes('light') || catLower.includes('bulb') || catLower.includes('tube') || catLower.includes('cfl')) {
-                  category = 'Fluorescent & LED Lighting';
-                } else if (catLower.includes('solar') || catLower.includes('panel') || catLower.includes('inverter')) {
-                  category = 'Solar PV Panels & Inverters';
-                } else if (catLower.includes('plastic')) {
-                  category = 'Plastic';
-                } else if (catLower.includes('glass')) {
-                  category = 'Glass';
-                } else if (catLower.includes('paper') || catLower.includes('cardboard')) {
-                  category = 'Paper/Cardboard';
-                } else if (catLower.includes('metal') || catLower.includes('steel') || catLower.includes('iron')) {
-                  category = 'Metal';
+              if (!VALID_CATEGORIES.includes(category)) {
+                // Case-insensitive exact match
+                const match = VALID_CATEGORIES.find(
+                  (c) => c.toLowerCase() === (category || '').trim().toLowerCase()
+                );
+                if (match) {
+                  category = match;
                 } else {
-                  category = 'Mixed/Other';
+                  // Intelligent mapping based on category text and detected item name
+                  const textToSearch = `${category || ''} ${parsed.detectedItemName || ''}`.toLowerCase();
+                  if (textToSearch.includes('board') || textToSearch.includes('pcb') || textToSearch.includes('motherboard')) {
+                    category = 'PCBs & Circuit Boards';
+                  } else if (textToSearch.includes('battery') || textToSearch.includes('lithium') || textToSearch.includes('cell')) {
+                    category = 'Lithium-ion & Batteries';
+                  } else if (textToSearch.includes('wire') || textToSearch.includes('cable') || textToSearch.includes('motor') || textToSearch.includes('copper')) {
+                    category = 'Copper Wire & Motors';
+                  } else if (textToSearch.includes('phone') || textToSearch.includes('tablet') || textToSearch.includes('mobile')) {
+                    category = 'Smartphones & Tablets';
+                  } else if (textToSearch.includes('laptop') || textToSearch.includes('computer') || textToSearch.includes('cpu')) {
+                    category = 'Laptops & Computers';
+                  } else if (textToSearch.includes('display') || textToSearch.includes('monitor') || textToSearch.includes('screen') || textToSearch.includes('crt') || textToSearch.includes('tv')) {
+                    category = 'Displays & CRT Monitors';
+                  } else if (textToSearch.includes('ac') || textToSearch.includes('fridge') || textToSearch.includes('refrigerator') || textToSearch.includes('washing')) {
+                    category = 'Large White Goods & ACs';
+                  } else if (textToSearch.includes('mixer') || textToSearch.includes('iron') || textToSearch.includes('kettle') || textToSearch.includes('appliance') || textToSearch.includes('toaster')) {
+                    category = 'Small Home Appliances';
+                  } else if (textToSearch.includes('light') || textToSearch.includes('bulb') || textToSearch.includes('tube') || textToSearch.includes('cfl') || textToSearch.includes('lamp')) {
+                    category = 'Fluorescent & LED Lighting';
+                  } else if (textToSearch.includes('solar') || textToSearch.includes('inverter') || textToSearch.includes('panel')) {
+                    category = 'Solar PV Panels & Inverters';
+                  } else if (textToSearch.includes('electronic') || textToSearch.includes('charger') || textToSearch.includes('adapter')) {
+                    category = 'E-waste';
+                  } else if (textToSearch.includes('glass') || textToSearch.includes('cullet')) {
+                    category = 'Glass';
+                  } else if (textToSearch.includes('paper') || textToSearch.includes('cardboard') || textToSearch.includes('carton') || textToSearch.includes('box') || textToSearch.includes('raddi')) {
+                    category = 'Paper/Cardboard';
+                  } else if (textToSearch.includes('plastic') || textToSearch.includes('bottle') || textToSearch.includes('pet') || textToSearch.includes('bucket')) {
+                    category = 'Plastic';
+                  } else if (textToSearch.includes('metal') || textToSearch.includes('steel') || textToSearch.includes('iron') || textToSearch.includes('aluminum') || textToSearch.includes('tin')) {
+                    category = 'Metal';
+                  } else if (textToSearch.includes('cloth') || textToSearch.includes('fabric') || textToSearch.includes('textile')) {
+                    category = 'Textile';
+                  } else if (textToSearch.includes('tyre') || textToSearch.includes('tire') || textToSearch.includes('rubber')) {
+                    category = 'Rubber';
+                  } else if (textToSearch.includes('organic') || textToSearch.includes('food') || textToSearch.includes('compost')) {
+                    category = 'Organic';
+                  } else {
+                    category = 'Mixed/Other';
+                  }
                 }
               }
 
