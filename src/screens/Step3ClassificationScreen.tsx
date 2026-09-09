@@ -13,6 +13,7 @@ import { VoiceButton } from '../components/VoiceButton';
 import { playChime } from '../utils/audioSpeech';
 import { logClassificationRecord } from '../utils/storage';
 import { getApiUrl } from '../utils/apiConfig';
+import { classifyScrapLocally } from '../utils/imageClassifier';
 
 interface Step3ClassificationScreenProps {
   language: Language;
@@ -132,72 +133,25 @@ export const Step3ClassificationScreen: React.FC<Step3ClassificationScreenProps>
         playChime('success');
       }
     } catch (err) {
-      console.warn('Fallback to client heuristic due to network/server:', err);
-      // Fallback
-      let fallbackCat: WasteCategory = 'Plastic';
-      let conf = 0.85;
-      let itemName = 'Plastic Scrap (PET / HDPE Bottles)';
-      let itemNameHi = 'प्लास्टिक कबाड़ (बोतलें व डिब्बे)';
-      let uncertain = false;
-      let wt = 3.5;
+      console.warn('Fallback to client vision classifier due to network/server:', err);
+      const local = await classifyScrapLocally(photoUrl, presetIndex);
 
-      if (typeof presetIndex === 'number') {
-        const presets = [
-          { cat: 'Plastic' as WasteCategory, name: 'Plastic PET Bottles & Beverage Jugs', nameHi: 'प्लास्टिक की बोतलें (PET) व डिब्बे', conf: 0.96, wt: 4.5 },
-          { cat: 'Glass' as WasteCategory, name: 'Glass Bottles & Jars (Cullet)', nameHi: 'कांच की बोतलें एवं शीशे के जार', conf: 0.93, wt: 8.0 },
-          { cat: 'Paper/Cardboard' as WasteCategory, name: 'Corrugated Cardboard Box Scrap', nameHi: 'गत्ता कार्टन एवं रद्दी पेपर', conf: 0.94, wt: 15.0 },
-          { cat: 'PCBs & Circuit Boards' as WasteCategory, name: 'Computer Motherboard (PCBs)', nameHi: 'कंप्यूटर मदरबोर्ड (सर्किट बोर्ड)', conf: 0.95, wt: 8.5 },
-          { cat: 'Lithium-ion & Batteries' as WasteCategory, name: 'Lithium-ion Battery Pack', nameHi: 'लिथियम-आयन बैटरी पैक', conf: 0.92, wt: 16.0 },
-          { cat: 'Copper Wire & Motors' as WasteCategory, name: 'Stripped Bright Copper Wires', nameHi: 'चमकीले तांबे के तार', conf: 0.89, wt: 12.0 },
-          { cat: 'Smartphones & Tablets' as WasteCategory, name: 'Smartphones & Feature Mobiles', nameHi: 'स्मार्टफोन और मोबाइल सेट', conf: 0.93, wt: 6.2 },
-          { cat: 'Laptops & Computers' as WasteCategory, name: 'Laptops & Desktop Components', nameHi: 'लैपटॉप और कंप्यूटर पुर्जे', conf: 0.88, wt: 14.0 },
-          { cat: 'Small Home Appliances' as WasteCategory, name: 'Mixed Electrical Scrap', nameHi: 'मिश्रित घरेलू बिजली कबाड़', conf: 0.58, wt: 11.5, uncertain: true },
-        ];
-        const p = presets[presetIndex] || presets[0];
-        fallbackCat = p.cat;
-        conf = p.conf;
-        itemName = p.name;
-        itemNameHi = p.nameHi;
-        uncertain = Boolean((p as any).uncertain);
-        wt = p.wt;
-      } else if (photoUrl) {
-        // Intelligent heuristics for custom camera capture when server is offline
-        const lowerUrl = photoUrl.toLowerCase();
-        if (lowerUrl.includes('glass')) {
-          fallbackCat = 'Glass';
-          itemName = 'Glass Bottles & Cullet';
-          itemNameHi = 'कांच की बोतलें और शीशा';
-          wt = 6.0;
-        } else if (lowerUrl.includes('paper') || lowerUrl.includes('cardboard')) {
-          fallbackCat = 'Paper/Cardboard';
-          itemName = 'Cardboard & Paper Scrap';
-          itemNameHi = 'गत्ता और कागज रद्दी';
-          wt = 12.0;
-        } else if (lowerUrl.includes('pcb') || lowerUrl.includes('circuit')) {
-          fallbackCat = 'PCBs & Circuit Boards';
-          itemName = 'Circuit Board / PCB Scrap';
-          itemNameHi = 'सर्किट बोर्ड कबाड़';
-          wt = 5.0;
-        } else {
-          // If unsure, default to Plastic but set uncertain so the user can easily select
-          uncertain = true;
-          conf = 0.65;
-          fallbackCat = 'Plastic';
-          itemName = 'Scrap Materials (Please Confirm Category)';
-          itemNameHi = 'कबाड़ सामग्री (कृपया सही श्रेणी चुनें)';
-        }
-      }
-
-      setPredictedCategory(fallbackCat);
-      setConfirmedCategory(fallbackCat);
-      setConfidence(conf);
-      setIsUncertain(uncertain);
-      setManualConfirmed(!uncertain);
-      setDetectedItemName(itemName);
-      setDetectedItemNameHi(itemNameHi);
-      setEstimatedWeightKg(wt);
-      setAiModelSource('local-heuristic');
-      if (uncertain) playChime('alert');
+      setPredictedCategory(local.category);
+      setConfirmedCategory(local.category);
+      setConfidence(local.confidence);
+      setIsUncertain(local.isUncertain);
+      setManualConfirmed(!local.isUncertain);
+      setDetectedItemName(local.detectedItemName);
+      setDetectedItemNameHi(local.detectedItemNameHi);
+      setEstimatedWeightKg(local.estimatedWeightKg);
+      setMaterials(local.materials);
+      setHazardousElements(local.hazardousElements);
+      setSafetyGuidanceEn(local.safetyGuidanceEn);
+      setSafetyGuidanceHi(local.safetyGuidanceHi);
+      setCleanliness(local.cleanliness);
+      setStructural(local.structural);
+      setAiModelSource(local.source);
+      if (local.isUncertain) playChime('alert');
       else playChime('success');
     } finally {
       setLoading(false);

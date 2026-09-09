@@ -91,18 +91,18 @@ export default function App() {
   const [photoDataUrl, setPhotoDataUrl] = useState<string>('');
   const [photoQuality, setPhotoQuality] = useState<PhotoQualityAssessment | undefined>();
   const [classification, setClassification] = useState<ClassificationResult>({
-    predictedCategory: 'E-waste',
-    confidence: 0.94,
-    secondaryPrediction: 'Metal',
+    predictedCategory: 'Plastic',
+    confidence: 0.95,
+    secondaryPrediction: 'Glass',
     secondaryConfidence: 0.05,
     isUncertain: false,
-    confirmedCategory: 'E-waste',
+    confirmedCategory: 'Plastic',
     wasManuallyCorrected: false,
     timestamp: Date.now(),
     logId: 'LOG-INIT-01',
-    photoUrl: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=500&q=80',
+    photoUrl: '',
   });
-  const [weightKg, setWeightKg] = useState<number>(14.5);
+  const [weightKg, setWeightKg] = useState<number>(4.5);
   const [condition, setCondition] = useState<{ cleanliness: 'clean' | 'dirty'; structural: 'intact' | 'damaged' }>({
     cleanliness: 'clean',
     structural: 'intact',
